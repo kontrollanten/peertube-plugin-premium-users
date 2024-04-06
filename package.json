@@ -8,7 +8,7 @@
     {
       "script": "dist/client/index.js",
       "scopes": [
-        "common"
+        "my-account"
       ]
     }
   ],
@@ -23,7 +23,7 @@
     "peertube",
     "plugin"
   ],
-  "library": "./dist/server/main.js",
+  "library": "./dist/server/server/main.js",
   "scripts": {
     "clean": "rm -rf dist/*",
     "prepare": "npm run build",
@@ -60,6 +60,7 @@
     "express": "^4.19.2"
   },
   "dependencies": {
+    "short-uuid": "^4.2.2",
     "stripe": "^14.22.0"
   }
 }

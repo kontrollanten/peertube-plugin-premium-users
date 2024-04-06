@@ -4,8 +4,7 @@ import type { PeerTubeHelpers, PluginSettingsManager, PluginStorageManager } fro
 import express from 'express'
 import Stripe from 'stripe'
 import winston from 'winston'
-import { SETTING_STRIPE_API_KEY } from '../constants'
-import { PluginUserInfoPayment } from '../types'
+import { SETTING_STRIPE_API_KEY } from '../../shared/constants'
 import { Storage } from '../storage'
 
 declare global {
@@ -58,13 +57,21 @@ export class StripeWebhook {
     this.logger.debug(`Received event ${event.type}`, event)
     this.logger.debug('Raw session: ', session)
 
+    /**
+     * TODO: Spara ner responsen i Redis och hantera dem i löpande jobb?
+     */
+
+    /**
+     * TODO: Ändra till customer.subscription.created ?
+     */
+
     if (event.type === 'checkout.session.completed') {
       await this.updateUserPaymentStatus(session as Stripe.Checkout.Session)
     }
 
     if (['checkout.session.async_payment_succeeded', 'checkout.session.completed'].includes(event.type)) {
       if ((session as Stripe.Checkout.Session).payment_status === 'paid') {
-        await this.storePayment(session as Stripe.Checkout.Session)
+        // await this.storePayment(session as Stripe.Checkout.Session)
       }
     }
 
@@ -101,10 +108,12 @@ export class StripeWebhook {
     }
 
     userInfo.paymentStatus = session.payment_status
+    // userInfo.subscriptionId = session.subscription as string
+    userInfo.customerId = session.customer as string
 
     await this.storage.storeUserInfo(userId, userInfo)
   }
-
+/*
   private readonly storePayment = async (session: Stripe.Checkout.Session): Promise<void> => {
     const payment: PluginUserInfoPayment = {
       sessionId: session.id,
@@ -140,10 +149,11 @@ export class StripeWebhook {
 
     await this.storage.storeUserInfo(userId, {
       ...userInfo,
-      paidUntil: paidUntil.toISOString(),
-      payments: [...payments, payment]
+      // paidUntil: paidUntil.toISOString(),
+      // payments: [...payments, payment]
     })
 
     this.logger.info('Succesfully registered payment for user ' + userId.toString())
   }
+  */
 }

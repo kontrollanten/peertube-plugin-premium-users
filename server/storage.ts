@@ -10,6 +10,33 @@ export class Storage {
     this.storageManager = storageManager
   }
 
+  addPremiumVideo = async (uuid: string): Promise<void> => {
+    const premiumVideos = await this.getPremiumVideos()
+
+    await this.storageManager.storeData(
+      this.premiumVideoStorageKey,
+      premiumVideos
+        .filter((_uuid: string) => _uuid !== uuid)
+        .concat(uuid)
+    )
+  }
+
+  removePremiumVideo = async (uuid: string): Promise<void> => {
+    const premiumVideos = await this.getPremiumVideos()
+
+    await this.storageManager.storeData(
+      this.premiumVideoStorageKey,
+      premiumVideos
+        .filter((_uuid: string) => _uuid !== uuid)
+    )
+  }
+
+  isPremiumVideo = async (uuid: string): Promise<boolean> => {
+    const premiumVideos = await this.getPremiumVideos()
+
+    return Boolean(premiumVideos.filter((_uuid) => _uuid === uuid))
+  }
+
   getUserInfo = async (userId: number): Promise<PluginUserInfo> => {
     const storageKey = this.getUserInfoStorageKey(userId)
     const userInfo = await this.storageManager.getData(storageKey) as unknown
@@ -26,4 +53,11 @@ export class Storage {
   }
 
   private readonly getUserInfoStorageKey = (userId: number): string => `user-${userId}`
+  private readonly premiumVideoStorageKey = 'premium-videos'
+
+  private readonly getPremiumVideos = async (): Promise<string[]> => {
+    const premiumVideos = (await this.storageManager.getData(this.premiumVideoStorageKey) ?? []) as unknown
+
+    return premiumVideos as string[]
+  }
 }

@@ -4,17 +4,22 @@ import {
   type MVideoFormattableDetails,
   type RegisterServerOptions,
   PeerTubeHelpers,
-  MVideoFullLight
+  MVideoFullLight,
+  MVideoWithAllFiles,
+  SettingEntries
 } from '@peertube/peertube-types'
 import type { ConstantManager } from
   '@peertube/peertube-types/shared/models/plugins/server/plugin-constant-manager.model'
 
 import express from 'express'
+import shortUUID from 'short-uuid'
 import { StripeWebhook } from './routes/stripe-webhook'
-import { SETTING_REPLACEMENT_VIDEO, SETTING_STRIPE_API_KEY } from './constants'
+import { SETTING_REPLACEMENT_VIDEO, SETTING_STRIPE_API_KEY, VIDEO_FIELD_IS_PREMIUM_CONTENT } from '../shared/constants'
 import { CustomVideoPrivacy } from './types'
-import { GetUserInfo } from './routes/get-user-info'
 import { Storage } from './storage'
+import { SubscriptionRoute } from './routes/subscription';
+
+const uuidTranslator = shortUUID()
 
 async function register ({
   getRouter,
@@ -29,6 +34,7 @@ async function register ({
   peertubeHelpers: PeerTubeHelpers & {
     videos: {
       loadFull: (id: number | string) => Promise<MVideoFullLight & { hasPrivateStaticPath: () => boolean }>
+      loadWithFiles: (id: number | string) => Promise<MVideoWithAllFiles>
     }
   }
 }): Promise<void> {
@@ -53,16 +59,50 @@ async function register ({
   })
 
   const storage = new Storage(storageManager)
-  let replacementVideoWithFiles: MVideoFullLight
+  let replacementVideoWithFiles: MVideoWithAllFiles
 
-  const loadReplacementVideo = async (): Promise<void> => {
-    const replacementVideoUrl = await settingsManager.getSetting(SETTING_REPLACEMENT_VIDEO) as string
+  const loadReplacementVideo = async (settings: SettingEntries): Promise<void> => {
+    let replacementVideoUrl = settings[SETTING_REPLACEMENT_VIDEO] as string
+
+    if (!replacementVideoUrl) {
+      logger.debug('No replacement video URL has been configured.')
+      return
+    }
+
+    if (replacementVideoUrl.indexOf('/w/') > 0) {
+      replacementVideoUrl = replacementVideoUrl.replace('/w/', '/videos/watch/')
+    }
+
+    try {
+      const eventualLongUuid = replacementVideoUrl.split('/').pop() ?? ''
+      replacementVideoUrl = replacementVideoUrl.replace(eventualLongUuid, uuidTranslator.toUUID(eventualLongUuid))
+    } catch (err) {}
+
     const replacementVideo = await peertubeHelpers.videos.loadByUrl(replacementVideoUrl)
-    replacementVideoWithFiles = await peertubeHelpers.videos.loadFull(replacementVideo.id)
+
+    if (!replacementVideo) {
+      logger.error('Replacement video URL not found in database.', { replacementVideoUrl })
+      return
+    }
+
+    replacementVideoWithFiles = await peertubeHelpers.videos.loadWithFiles(replacementVideo.id)
   }
 
   settingsManager.onSettingsChange(loadReplacementVideo)
-  await loadReplacementVideo()
+  await loadReplacementVideo(await settingsManager.getSettings([SETTING_REPLACEMENT_VIDEO]))
+
+  registerHook({
+    target: 'action:api.video.updated',
+    handler: async ({ video, body }: { video: MVideoFullLight, body: any }) => {
+      logger.debug('action update', body)
+      if (body.pluginData[VIDEO_FIELD_IS_PREMIUM_CONTENT] === 'true') {
+        logger.debug(`${video.uuid} is premium video`)
+        await storage.addPremiumVideo(video.uuid)
+      } else {
+        await storage.removePremiumVideo(video.uuid)
+      }
+    }
+  })
 
   registerHook({
     target: 'filter:api.video.get.result',
@@ -70,7 +110,19 @@ async function register ({
       video: MVideoFormattableDetails & { getMasterPlaylistUrl: () => string },
       { userId }: { videoId: number | string, userId: number }
     ): Promise<MVideo> => {
-      logger.debug('Checking status')
+      if (!replacementVideoWithFiles) {
+        logger.debug('No replacement video found.')
+        return video
+      }
+
+      const isPremiumVideo = await storage.isPremiumVideo(video.uuid)
+
+      if (!isPremiumVideo) {
+        logger.debug('Not a premium video, returning original video.')
+        return video
+      }
+
+      logger.debug('Its a premium video, checking if user is a premium user.')
       const userInfo = await storage.getUserInfo(userId)
 
       if (userInfo.paymentStatus === 'paid') {
@@ -79,13 +131,6 @@ async function register ({
       }
 
       logger.debug('Non premium user, returning the replacement video: ' + SETTING_REPLACEMENT_VIDEO)
-
-      /**
-       * Läs in detta i onSettingsChange
-       */
-      /**
-       * Läs in detta i onSettingsChange
-       */
 
       video.VideoStreamingPlaylists = video.VideoStreamingPlaylists.map((p) => {
         p.getMasterPlaylistUrl = () =>
@@ -108,7 +153,7 @@ async function register ({
 
   const router = getRouter()
   const stripeWebhook = new StripeWebhook(peertubeHelpers, storageManager, settingsManager)
-  const getUserInfo = new GetUserInfo(peertubeHelpers, storageManager)
+  const subscripton = new SubscriptionRoute(peertubeHelpers, settingsManager, storageManager)
 
   router.post(
     '/stripe-webhook',
@@ -118,9 +163,15 @@ async function register ({
   )
 
   router.get(
-    '/user-info',
+    '/subscription',
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    getUserInfo.routeHandler
+    subscripton.get
+  )
+
+  router.patch(
+    '/subscription',
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    subscripton.patch
   )
 }
 

@@ -21,7 +21,28 @@ export interface PluginUserInfoPayment {
 }
 
 export interface PluginUserInfo {
-  paidUntil?: string
-  paymentStatus?: Stripe.Checkout.Session.PaymentStatus // Remove this and use latest from payments instead?
+  // paidUntil?: string
+  paymentStatus?: Stripe.Checkout.Session.PaymentStatus // TODO: Remove this and use latest from payments instead?
+  // subscriptionId?: string
+  customerId?: string
   payments?: PluginUserInfoPayment[]
 };
+
+export interface Subscription {
+  cancelAt: string | null
+  cancelAtPeriodEnd: boolean | null
+  canceledAt: string | null
+  currentPeriodEnd: string | null
+  status: Stripe.Subscription.Status | null
+  startDate: string | null
+  invoices: SubscriptionInvoice[]
+}
+
+export interface SubscriptionInvoice {
+  amountTotal: number | null
+  created: string
+  currency: string
+  status: Stripe.Invoice.Status | null // Null means the invoice is canceled.
+  periodEnd: string
+  periodStart: string
+}

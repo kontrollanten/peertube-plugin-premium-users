@@ -1,25 +1,42 @@
+import { MyUser } from '@peertube/peertube-types/shared/models'
 import packageJson from '../package.json'
-import { PluginUserInfo } from '../server/types';
+import { Subscription } from '../server/types'
 
 export class Api {
   getAuthHeader: () => { Authorization: string } | undefined
+  pluginBasePath = `/plugins/${packageJson.name.replace('peertube-plugin-', '')}/router`
 
   constructor (getAuthHeader: () => { Authorization: string } | undefined) {
     this.getAuthHeader = getAuthHeader
   }
 
-  private async get (path: string): Promise<any> {
+  private async get<P>(path: string): Promise<P> {
     return fetch(path, {
       method: 'GET',
       headers: this.getAuthHeader()
     }).then(async res => res.json())
   }
 
-  async getMe (): Promise<any> {
-    return this.get('/api/v1/users/me')
+  private async patch (path: string, body: any): Promise<void> {
+    await fetch(path, {
+      method: 'PATCH',
+      headers: {
+        ...this.getAuthHeader(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
   }
 
-  async getUserInfo (): Promise<PluginUserInfo> {
-    return this.get(`/plugins/${packageJson.name.replace('peertube-plugin-', '')}/router/user-info`)
+  async getMe (): Promise<MyUser> {
+    return this.get<MyUser>('/api/v1/users/me')
+  }
+
+  async getSubscription (): Promise<Subscription> {
+    return this.get(this.pluginBasePath + '/subscription')
+  }
+
+  async updateSubscription (body: { cancelAtPeriodEnd: boolean }): Promise<void> {
+    return this.patch(this.pluginBasePath + '/subscription', body)
   }
 }

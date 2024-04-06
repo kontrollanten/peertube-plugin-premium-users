@@ -1,53 +1,9 @@
 import type { RegisterClientOptions } from '@peertube/peertube-types/client'
 import { RegisterClientRouteOptions } from '@peertube/peertube-types/shared/models'
 import { Api } from './api'
-import { PluginUserInfoPayment } from '../server/types'
-
-class UiBuilder {
-  rootEl: HTMLElement
-
-  constructor (rootEl: HTMLElement) {
-    this.rootEl = rootEl
-  }
-
-  div (children: HTMLElement[], className?: string): HTMLElement {
-    const elem = document.createElement('div')
-
-    if (className) {
-      elem.className = className
-    }
-
-    children.forEach(c => elem.appendChild(c))
-
-    return elem
-  }
-
-  a (innerText: string, href: string): HTMLElement {
-    const elem = document.createElement('a')
-    elem.innerText = innerText
-    elem.href = href
-
-    return elem
-  }
-
-  h2 (innerText: string): HTMLElement {
-    const elem = document.createElement('h2')
-    elem.innerText = innerText
-
-    return elem
-  }
-
-  p (innerText: string, className?: string): HTMLElement {
-    const elem = document.createElement('p')
-    elem.innerText = innerText
-
-    if (className) {
-      elem.className = className
-    }
-
-    return elem
-  }
-}
+import { SubscriptionInvoice } from '../server/types'
+import { VIDEO_FIELD_IS_PREMIUM_CONTENT } from '../shared/constants'
+import { UiBuilder } from './ui-builder'
 
 const formatDate = (date: string | number): string => {
   const d = new Date(date)
@@ -55,8 +11,9 @@ const formatDate = (date: string | number): string => {
   return d.toLocaleDateString('sv-SE')
 }
 
-function register ({
+async function register ({
   registerClientRoute,
+  registerVideoField,
   peertubeHelpers
 }: RegisterClientOptions & {
   registerClientRoute: (options: RegisterClientRouteOptions & {
@@ -66,16 +23,42 @@ function register ({
     title: string
     parentRoute: string
   }) => any
-}): void {
+}): Promise<void> {
+  const { translate } = peertubeHelpers
   const restApi = new Api(peertubeHelpers.getAuthHeader)
 
+  registerVideoField({
+    name: VIDEO_FIELD_IS_PREMIUM_CONTENT,
+    label: await translate('Premium content'),
+    type: 'select',
+    options: [
+      {
+        value: 'false',
+        label: await translate('Non-premium content')
+      },
+      {
+        value: 'true',
+        label: await translate('Premium content')
+      }
+    ],
+    default: false,
+    error: async (options) => {
+      console.log({ options })
+
+      return { error: false }
+    }
+  }, {
+    type: 'update',
+    tab: 'main'
+  })
+
   registerClientRoute({
-    route: '/plus-konto',
+    route: '/premium',
     parentRoute: '/my-account',
     menuItem: {
-      label: 'Plus-konto'
+      label: await translate('Plus-konto')
     },
-    title: 'Plus-konto',
+    title: await translate('Plus-konto'),
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     onMount: async ({ rootEl }): Promise<void> => {
       rootEl.className = 'plugin-premium-users'
@@ -86,83 +69,103 @@ function register ({
       } catch (err) {
         console.error('Failed to fetch /api/v1/users/me', { err })
 
-        // Visa ett felmeddelande i och med att vi inte har användar-id.
+        // TODO: Visa ett felmeddelande i och med att vi inte har användar-id.
+
+        return
       }
 
-      const userInfo = await restApi.getUserInfo()
-      const isPlusUser = userInfo.paymentStatus === 'paid'
+      const subscription = await restApi.getSubscription()
+      const isPlusUser = subscription.status === 'active'
 
       const uiBuilder = new UiBuilder(rootEl)
 
       const paymentStatus = []
 
       if (isPlusUser) {
-        paymentStatus.push(
-          uiBuilder.p('Du är plus-medlem. Medlemskapet förnyas ' + formatDate((userInfo.paidUntil as string)) + '.')
-        )
-      } else {
-        paymentStatus.push(uiBuilder.p('Du är för närvarande inte plus-medlem.'))
+        let subscriptionDesc
+        let buttonText
+
+        if (subscription.cancelAtPeriodEnd) {
+          subscriptionDesc = await translate(
+            'Subscription will not be renewed and will end at '
+          ) +
+            formatDate(subscription.cancelAt as string) + '.'
+          buttonText = await translate('Resume subscription')
+        } else {
+          subscriptionDesc = 'Subscription will be renewed at ' +
+            formatDate((subscription.currentPeriodEnd as string)) +
+            '.'
+          buttonText = await translate('Cancel subscription')
+        }
+
+        const button = uiBuilder.a(buttonText, {
+          class: 'grey-button peertube-button-link'
+        })
+
+        button.addEventListener('click', (): void => {
+          button.setAttribute('disabled', 'disabled')
+          /**
+           * TODO: Add loader
+           */
+
+          restApi.updateSubscription({
+            cancelAtPeriodEnd: !subscription.cancelAtPeriodEnd
+          })
+            .then(() => {
+              /**
+               * TODO: Repaint instead of page reload
+               */
+              window.location.reload()
+            })
+            .catch((err: any) => {
+              console.error('Couldn\'t cancel subscription', { err })
+            })
+        })
 
         paymentStatus.push(
-          // eslint-disable-next-line max-len
-          uiBuilder.a('Bli plus-medlem', `https://buy.stripe.com/test_8wM8z9dFcbz2gLu4gg?client_reference_id=${userMe.id}&prefilled_email=${userMe.email}&locale=sv-SE`)
+          uiBuilder.p(
+            await translate('You\'re a premium user.') + ' ' + subscriptionDesc
+          ),
+          button
+        )
+      } else {
+        paymentStatus.push(
+          uiBuilder.p(await translate('You\'re not a premium user')),
+          uiBuilder.a(await translate('Subscribe to be a premium user'), {
+            class: 'orange-button peertube-button-link',
+            // eslint-disable-next-line max-len
+            href: `https://buy.stripe.com/test_8wM8z9dFcbz2gLu4gg?client_reference_id=${userMe.id}&prefilled_email=${userMe.email}&locale=sv-SE`
+          })
         )
       }
 
-      rootEl.appendChild(uiBuilder.div(
-        [
-          uiBuilder.div(
-            [uiBuilder.h2('Status')],
-            'col-12 col-lg-4 col-xl-3'
-          ),
-          uiBuilder.div(
-            paymentStatus,
-            'col-12 col-lg-8 col-xl-9'
-          )
-        ],
-        'row'
-      ))
-
-      const renderPaymentList = (payments: PluginUserInfoPayment[]): HTMLElement =>
-        uiBuilder.div(
-          payments.map((payment) =>
-            uiBuilder.div([
-              uiBuilder.div(
-                [uiBuilder.p(formatDate(+payment.created * 1000), 'mb-2 fw-bold')],
-                'col-12'
-              ),
-              uiBuilder.div(
-                [uiBuilder.p('Summa')],
-                'col-12 col-lg-4 col-xl-3'
-              ),
-              uiBuilder.div(
-                [uiBuilder.p(`${(payment.amountTotal ?? 0) / 100} ${payment.currency.toUpperCase()}`)],
-                'col-12 col-lg-8 col-xl-9'
-              ),
-              uiBuilder.div(
-                [uiBuilder.p('Status')],
-                'col-12 col-lg-4 col-xl-3'
-              ),
-              uiBuilder.div(
-                [uiBuilder.p(`${payment.status}`)],
-                'col-12 col-lg-8 col-xl-9'
-              )
-            ], 'row')
-          )
+      rootEl.appendChild(
+        uiBuilder.renderRow(
+          [uiBuilder.h2(await translate('Status'))],
+          paymentStatus
         )
+      )
 
-      rootEl.appendChild(uiBuilder.div(
-        [
-          uiBuilder.div(
-            [uiBuilder.h2('Betalningshistorik')],
-            'col-12 col-lg-4 col-xl-3'
-          ),
-          uiBuilder.div(
-            [renderPaymentList(userInfo.payments ?? [])],
-            'col-12 col-lg-8 col-xl-9'
-          )
-        ],
-        'row'
+      const renderInvoiceList = async (payments: SubscriptionInvoice[]): Promise<HTMLElement[]> =>
+        Promise.all(payments.map(async (payment) =>
+          uiBuilder.div([
+            uiBuilder.renderRow(
+              [uiBuilder.p(formatDate(payment.created), 'mb-2 fw-bold')]
+            ),
+            uiBuilder.renderRow(
+              [uiBuilder.p(await translate('Sum'))],
+              [uiBuilder.p(`${(payment.amountTotal ?? 0) / 100} ${payment.currency.toUpperCase()}`)]
+            ),
+            uiBuilder.renderRow(
+              [uiBuilder.p(await translate('Status'))],
+              [uiBuilder.p(`${payment.status ?? await translate('Canceled')}`)]
+            )
+          ])
+        ))
+
+      rootEl.appendChild(uiBuilder.renderRow(
+        [uiBuilder.h2(await translate('Betalningshistorik'))],
+        await renderInvoiceList(subscription.invoices ?? [])
       ))
     }
   })
