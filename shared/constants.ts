@@ -1,4 +1,5 @@
 export const SETTING_STRIPE_API_KEY = 'stripe-api-key'
+export const SETTING_STRIPE_CUSTOMER_PORTAL_URL = 'stripe-customer-portal-url'
 export const SETTING_STRIPE_SUBSCRIPTION_PLAN_ID = 'stripe-subscription-plan-id'
 export const SETTING_STRIPE_WEBHOOK_SECRET = 'stripe-webhook-secret'
 export const SETTING_REPLACEMENT_VIDEO = 'replacement-video-url'

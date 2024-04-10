@@ -18,6 +18,7 @@ import { StripeWebhook } from './routes/stripe-webhook'
 import {
   SETTING_REPLACEMENT_VIDEO,
   SETTING_STRIPE_API_KEY,
+  SETTING_STRIPE_CUSTOMER_PORTAL_URL,
   SETTING_STRIPE_SUBSCRIPTION_PLAN_ID,
   SETTING_STRIPE_WEBHOOK_SECRET,
   VIDEO_FIELD_IS_PREMIUM_CONTENT
@@ -66,6 +67,16 @@ async function register ({
       '<a href="https://docs.stripe.com/webhooks#endpoint-secrets" target="_blank">Webhook signing secret</a>',
     type: 'input',
     private: true
+  })
+
+  registerSetting({
+    name: SETTING_STRIPE_CUSTOMER_PORTAL_URL,
+    label: 'Stripe customer portal URL',
+    descriptionHTML:
+      // eslint-disable-next-line max-len
+      '<a href="https://docs.stripe.com/customer-management/activate-no-code-customer-portal" target="_blank">How to activate customer portal</a>',
+    type: 'input',
+    private: false
   })
 
   registerSetting({

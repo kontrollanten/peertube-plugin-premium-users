@@ -2,7 +2,7 @@ import type { RegisterClientOptions } from '@peertube/peertube-types/client'
 import { RegisterClientRouteOptions } from '@peertube/peertube-types/shared/models'
 import { Api } from './api'
 import { SubscriptionInvoice } from '../server/types'
-import { VIDEO_FIELD_IS_PREMIUM_CONTENT } from '../shared/constants'
+import { SETTING_STRIPE_CUSTOMER_PORTAL_URL, VIDEO_FIELD_IS_PREMIUM_CONTENT } from '../shared/constants'
 import { UiBuilder } from './ui-builder'
 
 const formatDate = (date: string | number): string => {
@@ -85,27 +85,27 @@ async function register ({
 
       if (isPlusUser) {
         let subscriptionDesc
-        let buttonText
+        let cancelButtonText
 
         if (subscription.cancelAtPeriodEnd) {
           subscriptionDesc = await translate(
             'Subscription will not be renewed and will end at '
           ) +
             formatDate(subscription.cancelAt as string) + '.'
-          buttonText = await translate('Resume subscription')
+          cancelButtonText = await translate('Resume subscription')
         } else {
           subscriptionDesc = 'Subscription will be renewed at ' +
             formatDate((subscription.currentPeriodEnd as string)) +
             '.'
-          buttonText = await translate('Cancel subscription')
+          cancelButtonText = await translate('Cancel subscription')
         }
 
-        const button = uiBuilder.a(buttonText, {
+        const cancelButton = uiBuilder.a(cancelButtonText, {
           class: 'grey-button peertube-button-link'
         })
 
-        button.addEventListener('click', (): void => {
-          button.setAttribute('disabled', 'disabled')
+        cancelButton.addEventListener('click', (): void => {
+          cancelButton.setAttribute('disabled', 'disabled')
           /**
            * TODO: Add loader
            */
@@ -131,11 +131,19 @@ async function register ({
             })
         })
 
+        const settings = await peertubeHelpers.getSettings()
+        const manageButton = uiBuilder.a(await translate('Manage subscription'), {
+          class: 'grey-button peertube-button-link',
+          href: settings[SETTING_STRIPE_CUSTOMER_PORTAL_URL] as string,
+          target: '_blank'
+        })
+
         paymentStatus.push(
           uiBuilder.p(
             await translate('You\'re a premium user.') + ' ' + subscriptionDesc
           ),
-          button
+          manageButton,
+          cancelButton
         )
       } else {
         const button = uiBuilder.a(await translate('Subscribe to be a premium user'), {

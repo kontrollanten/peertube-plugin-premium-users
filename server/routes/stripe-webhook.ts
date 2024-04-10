@@ -63,11 +63,14 @@ export class StripeWebhook {
 
     /**
      * TODO: Spara ner responsen i Redis och hantera dem i löpande jobb?
+     * https://docs.stripe.com/webhooks#acknowledge-events-immediately
      */
 
     /**
      * TODO: Ändra till customer.subscription.created ?
-     */
+    */
+    // eslint-disable-next-line max-len
+    // https://docs.stripe.com/billing/subscriptions/build-subscriptions?platform=web&ui=stripe-hosted#provision-and-monitor
 
     if (event.type === 'checkout.session.completed') {
       await this.updateUserPaymentStatus(session as Stripe.Checkout.Session)

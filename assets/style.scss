@@ -1,9 +1,17 @@
 .plugin-premium-users {
+  > .row {
+    padding-bottom: 20px;
+  }
+
   h2 {
     text-transform: uppercase;
     color: var(--mainColor);
     font-weight: 700;
     font-size: 1rem;
     margin-bottom: 10px;
+  }
+
+  .grey-button.peertube-button-link {
+    margin-right: 10px;
   }
 }
