@@ -19,6 +19,7 @@ import {
   SETTING_REPLACEMENT_VIDEO,
   SETTING_STRIPE_API_KEY,
   SETTING_STRIPE_SUBSCRIPTION_PLAN_ID,
+  SETTING_STRIPE_WEBHOOK_SECRET,
   VIDEO_FIELD_IS_PREMIUM_CONTENT
 } from '../shared/constants'
 import { CustomVideoPrivacy } from './types'
@@ -59,14 +60,12 @@ async function register ({
   })
 
   registerSetting({
-    name: SETTING_REPLACEMENT_VIDEO,
-    label: 'Replacement video URL',
+    name: SETTING_STRIPE_WEBHOOK_SECRET,
+    label: 'Stripe webhook secret',
+    descriptionHTML:
+      '<a href="https://docs.stripe.com/webhooks#endpoint-secrets" target="_blank">Webhook signing secret</a>',
     type: 'input',
-    private: true,
-    descriptionHTML: `
-      URL to video that will be shown to non-premium users when trying to watch a premium video.
-      Has to be an URL on this instance.
-      `
+    private: true
   })
 
   registerSetting({
@@ -78,6 +77,17 @@ async function register ({
       label: (plan.product as Stripe.Product)?.name ?? plan.id
     })),
     private: true
+  })
+
+  registerSetting({
+    name: SETTING_REPLACEMENT_VIDEO,
+    label: 'Replacement video URL',
+    type: 'input',
+    private: true,
+    descriptionHTML: `
+      URL to video that will be shown to non-premium users when trying to watch a premium video.
+      Has to be an URL on this instance.
+      `
   })
 
   const storage = new Storage(storageManager)

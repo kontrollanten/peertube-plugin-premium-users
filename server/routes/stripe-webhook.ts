@@ -4,7 +4,7 @@ import type { PeerTubeHelpers, PluginSettingsManager, PluginStorageManager } fro
 import express from 'express'
 import Stripe from 'stripe'
 import winston from 'winston'
-import { SETTING_STRIPE_API_KEY } from '../../shared/constants'
+import { SETTING_STRIPE_API_KEY, SETTING_STRIPE_WEBHOOK_SECRET } from '../../shared/constants'
 import { Storage } from '../storage'
 
 declare global {
@@ -34,11 +34,13 @@ export class StripeWebhook {
 
   routeHandler = async (req: express.Request, res: express.Response): Promise<void> => {
     const stripe = await this.getStripe()
+    const webhookSecret = await this.settingsManager.getSetting(SETTING_STRIPE_WEBHOOK_SECRET) as string
 
-    /**
-     * TODO: Move to settings
-     */
-    const webhookSecret = 'whsec_e8f0f7b32199bcd5970ab8c1d4abe981908cc3403f54134c6c65714343147dae'
+    if (!webhookSecret) {
+      this.logger.error('Can\'t parse Stripe webhook since there\'s no webhook secret configured.')
+      res.status(500).json({})
+      return
+    }
 
     const sig = req.headers['stripe-signature']
 
@@ -47,13 +49,11 @@ export class StripeWebhook {
     try {
       event = stripe.webhooks.constructEvent(req.rawBody, sig as string, webhookSecret)
     } catch (err: any) {
-      // On error, log and return the error message
       this.logger.error(`❌ Error message: ${(err as Error).message}`)
       res.status(400).send(`Webhook Error: ${(err as Error).message}`)
       return
     }
 
-    // Successfully constructed event
     this.logger.debug('✅ Success:', event.id)
 
     const session = event.data.object
@@ -106,13 +106,13 @@ export class StripeWebhook {
     const userId = customer.metadata.peertubeId
 
     if (userId === null) {
-      throw Error('session.client_reference_id is null.')
+      throw Error('customer.metadata.peertubeId is null.')
     }
 
     const parsedId = +userId
 
     if (isNaN(parsedId)) {
-      throw Error('session.client_reference_id is not a number: ' + userId)
+      throw Error('customer.metadata.peertubeId is not a number: ' + userId)
     }
 
     return parsedId
