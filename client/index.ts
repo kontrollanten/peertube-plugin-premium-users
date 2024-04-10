@@ -63,15 +63,17 @@ async function register ({
     onMount: async ({ rootEl }): Promise<void> => {
       rootEl.className = 'plugin-premium-users'
 
-      let userMe
-      try {
-        userMe = await restApi.getMe()
-      } catch (err) {
-        console.error('Failed to fetch /api/v1/users/me', { err })
+      const searchParams = new URLSearchParams(window.location.search)
 
-        // TODO: Visa ett felmeddelande i och med att vi inte har användar-id.
-
-        return
+      if (searchParams.get('checkout_status') === 'success') {
+        peertubeHelpers.showModal({
+          title: await translate('Payment succeeded'),
+          content: await translate(
+            `Your payment succeeded and will short be registered, 
+            it may take awhile depending on your payment method.`
+          ),
+          close: true
+        })
       }
 
       const subscription = await restApi.getSubscription()
@@ -118,6 +120,9 @@ async function register ({
               window.location.reload()
             })
             .catch((err: any) => {
+              /**
+               * TODO: Show error modal
+               */
               console.error('Couldn\'t cancel subscription', { err })
             })
         })
@@ -129,13 +134,28 @@ async function register ({
           button
         )
       } else {
+        const button = uiBuilder.a(await translate('Subscribe to be a premium user'), {
+          class: 'orange-button peertube-button-link'
+        })
+
+        button.addEventListener('click', () => {
+          button.setAttribute('disabled', 'disabled')
+
+          restApi.createCheckout()
+            .then(({ checkoutUrl }: { checkoutUrl: string }) => {
+              window.location.href = checkoutUrl
+            })
+            .catch(err => {
+              /**
+               * TODO: Show error modal
+               */
+              console.error('Couldn\'t create checkout', { err })
+            })
+        })
+
         paymentStatus.push(
           uiBuilder.p(await translate('You\'re not a premium user')),
-          uiBuilder.a(await translate('Subscribe to be a premium user'), {
-            class: 'orange-button peertube-button-link',
-            // eslint-disable-next-line max-len
-            href: `https://buy.stripe.com/test_8wM8z9dFcbz2gLu4gg?client_reference_id=${userMe.id}&prefilled_email=${userMe.email}&locale=sv-SE`
-          })
+          button
         )
       }
 

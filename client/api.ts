@@ -28,6 +28,18 @@ export class Api {
     })
   }
 
+  private async post (path: string, body?: any): Promise<any> {
+    return fetch(path, {
+      method: 'POST',
+      headers: {
+        ...this.getAuthHeader(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+      .then(async res => res.json())
+  }
+
   async getMe (): Promise<MyUser> {
     return this.get<MyUser>('/api/v1/users/me')
   }
@@ -38,5 +50,9 @@ export class Api {
 
   async updateSubscription (body: { cancelAtPeriodEnd: boolean }): Promise<void> {
     return this.patch(this.pluginBasePath + '/subscription', body)
+  }
+
+  async createCheckout (): Promise<{ checkoutUrl: string}> {
+    return this.post(this.pluginBasePath + '/checkout')
   }
 }

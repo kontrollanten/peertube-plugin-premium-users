@@ -1,4 +1,9 @@
-import { HttpStatusCode, type PeerTubeHelpers, type PluginSettingsManager, type PluginStorageManager } from '@peertube/peertube-types'
+import {
+  HttpStatusCode,
+  type PeerTubeHelpers,
+  type PluginSettingsManager,
+  type PluginStorageManager
+} from '@peertube/peertube-types'
 import express from 'express'
 import { Storage } from '../storage'
 import { SETTING_STRIPE_API_KEY } from '../../shared/constants'
@@ -54,7 +59,7 @@ export class SubscriptionRoute {
     }
 
     if (customer.deleted === true || !customer.subscriptions?.data.length) {
-      res.status(404).json()
+      res.status(404).json({})
       return
     }
 
@@ -76,7 +81,7 @@ export class SubscriptionRoute {
     const userInfo = await this.storage.getUserInfo(user.id)
 
     if (!userInfo.customerId) {
-      res.status(404).json()
+      res.status(404).json({})
       return
     }
 
@@ -151,7 +156,7 @@ export class SubscriptionRoute {
     } catch (err: any) {
       if (err.statusCode === 404) {
         this.peertubeHelpers.logger.warn('Subscription already deleted for user ' + String(user.id), { err })
-        res.status(404)
+        res.status(404).json({})
         return
       }
 

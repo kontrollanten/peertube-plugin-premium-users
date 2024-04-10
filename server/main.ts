@@ -11,13 +11,21 @@ import {
 import type { ConstantManager } from
   '@peertube/peertube-types/shared/models/plugins/server/plugin-constant-manager.model'
 
+import Stripe from 'stripe'
 import express from 'express'
 import shortUUID from 'short-uuid'
 import { StripeWebhook } from './routes/stripe-webhook'
-import { SETTING_REPLACEMENT_VIDEO, SETTING_STRIPE_API_KEY, VIDEO_FIELD_IS_PREMIUM_CONTENT } from '../shared/constants'
+import {
+  SETTING_REPLACEMENT_VIDEO,
+  SETTING_STRIPE_API_KEY,
+  SETTING_STRIPE_SUBSCRIPTION_PLAN_ID,
+  VIDEO_FIELD_IS_PREMIUM_CONTENT
+} from '../shared/constants'
 import { CustomVideoPrivacy } from './types'
 import { Storage } from './storage'
 import { SubscriptionRoute } from './routes/subscription';
+import { getStripeSubscriptionPlans } from './utils';
+import { CheckoutRoute } from './routes/checkout';
 
 const uuidTranslator = shortUUID()
 
@@ -39,6 +47,9 @@ async function register ({
   }
 }): Promise<void> {
   const { logger } = peertubeHelpers
+  const stripePlans = await getStripeSubscriptionPlans(
+    await settingsManager.getSetting(SETTING_STRIPE_API_KEY) as string
+  )
 
   registerSetting({
     name: SETTING_STRIPE_API_KEY,
@@ -56,6 +67,17 @@ async function register ({
       URL to video that will be shown to non-premium users when trying to watch a premium video.
       Has to be an URL on this instance.
       `
+  })
+
+  registerSetting({
+    name: SETTING_STRIPE_SUBSCRIPTION_PLAN_ID,
+    label: 'Stripe plan used for subscription',
+    type: 'select',
+    options: stripePlans.map((plan) => ({
+      value: plan.id,
+      label: (plan.product as Stripe.Product)?.name ?? plan.id
+    })),
+    private: true
   })
 
   const storage = new Storage(storageManager)
@@ -154,6 +176,7 @@ async function register ({
   const router = getRouter()
   const stripeWebhook = new StripeWebhook(peertubeHelpers, storageManager, settingsManager)
   const subscripton = new SubscriptionRoute(peertubeHelpers, settingsManager, storageManager)
+  const checkout = new CheckoutRoute(peertubeHelpers, settingsManager, storageManager)
 
   router.post(
     '/stripe-webhook',
@@ -172,6 +195,12 @@ async function register ({
     '/subscription',
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     subscripton.patch
+  )
+
+  router.post(
+    '/checkout',
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    checkout.post
   )
 }
 
