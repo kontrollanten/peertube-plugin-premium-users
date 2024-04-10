@@ -119,10 +119,14 @@ async function register ({
                */
               window.location.reload()
             })
-            .catch((err: any) => {
-              /**
-               * TODO: Show error modal
-               */
+            .catch(async (err: any) => {
+              peertubeHelpers.showModal({
+                title: await translate('Something went wrong'),
+                content: await translate(
+                  'Couldn\'t cancel subcsription due to technical issues. Please try again later.'
+                ),
+                close: true
+              })
               console.error('Couldn\'t cancel subscription', { err })
             })
         })
@@ -145,10 +149,15 @@ async function register ({
             .then(({ checkoutUrl }: { checkoutUrl: string }) => {
               window.location.href = checkoutUrl
             })
-            .catch(err => {
-              /**
-               * TODO: Show error modal
-               */
+            .catch(async err => {
+              peertubeHelpers.showModal({
+                title: await translate('Something went wrong'),
+                content: await translate(
+                  'Couldn\'t create subcsription due to technical issues. Please try again later.'
+                ),
+                close: true
+              })
+
               console.error('Couldn\'t create checkout', { err })
             })
         })
