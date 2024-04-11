@@ -8,24 +8,11 @@ export declare const enum CustomVideoPrivacy {
   PLUS_VIDEO = 67
 };
 
-export interface PluginUserInfoPayment {
-  amountTotal: number | null
-  created: string
-  currency: string
-  customerId: string
-  mode: Stripe.Checkout.Session.Mode
-  paymentMethodTypes: string[]
-  paymentStatus: Stripe.Checkout.Session.PaymentStatus
-  sessionId: string
-  status: Stripe.Checkout.Session.Status
-}
-
 export interface PluginUserInfo {
-  // paidUntil?: string
-  paymentStatus?: Stripe.Checkout.Session.PaymentStatus // TODO: Remove this and use latest from payments instead?
-  // subscriptionId?: string
+  paidUntil?: string
+  hasPaymentFailed?: boolean
+  subscriptionId?: string
   customerId?: string
-  payments?: PluginUserInfoPayment[]
 };
 
 export interface Subscription {

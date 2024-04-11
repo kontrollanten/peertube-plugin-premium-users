@@ -146,7 +146,7 @@ async function register ({
           cancelButton
         )
       } else {
-        const button = uiBuilder.a(await translate('Subscribe to be a premium user'), {
+        const button = uiBuilder.a(await translate('Subscribe to become a premium user'), {
           class: 'orange-button peertube-button-link'
         })
 

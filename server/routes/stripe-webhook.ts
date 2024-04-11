@@ -4,7 +4,11 @@ import type { PeerTubeHelpers, PluginSettingsManager, PluginStorageManager } fro
 import express from 'express'
 import Stripe from 'stripe'
 import winston from 'winston'
-import { SETTING_STRIPE_API_KEY, SETTING_STRIPE_WEBHOOK_SECRET } from '../../shared/constants'
+import {
+  SETTING_STRIPE_API_KEY,
+  SETTING_STRIPE_SUBSCRIPTION_PLAN_ID,
+  SETTING_STRIPE_WEBHOOK_SECRET
+} from '../../shared/constants'
 import { Storage } from '../storage'
 
 declare global {
@@ -62,27 +66,41 @@ export class StripeWebhook {
     this.logger.debug('Raw session: ', session)
 
     /**
-     * TODO: Spara ner responsen i Redis och hantera dem i löpande jobb?
+     * TODO: Store the event in Redis to handle it later
      * https://docs.stripe.com/webhooks#acknowledge-events-immediately
      */
 
-    /**
-     * TODO: Ändra till customer.subscription.created ?
-    */
     // eslint-disable-next-line max-len
     // https://docs.stripe.com/billing/subscriptions/build-subscriptions?platform=web&ui=stripe-hosted#provision-and-monitor
 
-    if (event.type === 'checkout.session.completed') {
-      await this.updateUserPaymentStatus(session as Stripe.Checkout.Session)
+    if (!['checkout.session.completed', 'invoice.paid'].includes(event.type)) {
+      return
     }
 
-    if (['checkout.session.async_payment_succeeded', 'checkout.session.completed'].includes(event.type)) {
-      if ((session as Stripe.Checkout.Session).payment_status === 'paid') {
-        // await this.storePayment(session as Stripe.Checkout.Session)
-      }
+    if (!(session as Stripe.Checkout.Session | Stripe.Invoice).subscription) {
+      return
     }
 
-    // TODO: Manage unsubcription?
+    const planId = await this.settingsManager.getSetting(SETTING_STRIPE_SUBSCRIPTION_PLAN_ID)
+    const subscription = await stripe.subscriptions
+      .retrieve((session as Stripe.Checkout.Session | Stripe.Invoice).subscription as string)
+    const plan = subscription.items.data.find(i => i.plan.id === planId)
+
+    if (!plan) {
+      return
+    }
+
+    if (event.type === 'checkout.session.completed' && (session as Stripe.Checkout.Session).mode === 'subscription') {
+      await this.updateUserFromCheckout(session as Stripe.Checkout.Session, subscription)
+    }
+
+    if (event.type === 'invoice.paid') {
+      await this.updateUserFromInvoice(session as Stripe.Invoice, subscription)
+    }
+
+    if (event.type === 'invoice.payment_failed') {
+      await this.updateUserFromFailedPayment(session as Stripe.Invoice)
+    }
 
     res.status(200).end()
   }
@@ -98,36 +116,60 @@ export class StripeWebhook {
     return this.stripe
   }
 
-  private readonly getUserIdFromSession = async (session: Stripe.Checkout.Session): Promise<number> => {
-    const stripe = await this.getStripe()
-    const customer = await stripe.customers.retrieve(session.customer as string)
+  private readonly getUserIdFromSession =
+    async (session: Stripe.Checkout.Session | Stripe.Invoice): Promise<number> => {
+      const stripe = await this.getStripe()
+      const customer = await stripe.customers.retrieve(session.customer as string)
 
-    if (customer.deleted) {
-      throw Error(`Customer ${session.customer as string} is deleted`)
+      if (customer.deleted) {
+        throw Error(`Customer ${session.customer as string} is deleted`)
+      }
+
+      const userId = customer.metadata.peertubeId
+
+      if (userId === null) {
+        throw Error('customer.metadata.peertubeId is null.')
+      }
+
+      const parsedId = +userId
+
+      if (isNaN(parsedId)) {
+        throw Error('customer.metadata.peertubeId is not a number: ' + userId)
+      }
+
+      return parsedId
     }
 
-    const userId = customer.metadata.peertubeId
-
-    if (userId === null) {
-      throw Error('customer.metadata.peertubeId is null.')
-    }
-
-    const parsedId = +userId
-
-    if (isNaN(parsedId)) {
-      throw Error('customer.metadata.peertubeId is not a number: ' + userId)
-    }
-
-    return parsedId
-  }
-
-  private readonly updateUserPaymentStatus = async (session: Stripe.Checkout.Session): Promise<void> => {
+  private readonly updateUserFromFailedPayment = async (session: Stripe.Invoice): Promise<void> => {
     const userId = await this.getUserIdFromSession(session)
     const userInfo = await this.storage.getUserInfo(userId)
 
-    userInfo.paymentStatus = session.payment_status
-    userInfo.customerId = session.customer as string
+    userInfo.hasPaymentFailed = true
 
     await this.storage.storeUserInfo(userId, userInfo)
   }
+
+  private readonly updateUserFromInvoice =
+    async (session: Stripe.Invoice, subscription: Stripe.Subscription): Promise<void> => {
+      const userId = await this.getUserIdFromSession(session)
+      const userInfo = await this.storage.getUserInfo(userId)
+
+      userInfo.paidUntil = new Date(subscription.current_period_end * 1000).toISOString()
+      userInfo.hasPaymentFailed = false
+
+      await this.storage.storeUserInfo(userId, userInfo)
+    }
+
+  private readonly updateUserFromCheckout =
+    async (session: Stripe.Checkout.Session, subscription: Stripe.Subscription): Promise<void> => {
+      const userId = await this.getUserIdFromSession(session)
+      const userInfo = await this.storage.getUserInfo(userId)
+
+      userInfo.paidUntil = new Date(subscription.current_period_end * 1000).toISOString()
+      userInfo.customerId = session.customer as string
+      userInfo.subscriptionId = session.subscription as string
+      userInfo.hasPaymentFailed = false
+
+      await this.storage.storeUserInfo(userId, userInfo)
+    }
 }

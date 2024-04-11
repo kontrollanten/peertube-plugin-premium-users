@@ -167,13 +167,14 @@ async function register ({
 
       logger.debug('Its a premium video, checking if user is a premium user.')
       const userInfo = await storage.getUserInfo(userId)
+      const ONE_DAY = 60 * 60 * 24 * 1000
 
-      if (userInfo.paymentStatus === 'paid') {
+      if (userInfo.paidUntil && (+new Date(userInfo.paidUntil) - +new Date()) > ONE_DAY) {
         logger.debug('Premium user, returning the original video')
         return video
       }
 
-      logger.debug('Non premium user, returning the replacement video: ' + SETTING_REPLACEMENT_VIDEO)
+      logger.debug('Non premium user, returning the replacement video: ' + replacementVideoWithFiles.uuid)
 
       video.VideoStreamingPlaylists = video.VideoStreamingPlaylists.map((p) => {
         p.getMasterPlaylistUrl = () =>
