@@ -10,6 +10,7 @@ import {
   SETTING_STRIPE_WEBHOOK_SECRET
 } from '../../shared/constants'
 import { Storage } from '../storage'
+import { getStripeCustomerMetadataFieldName } from '../utils'
 
 declare global {
   namespace Express {
@@ -21,6 +22,7 @@ declare global {
 
 export class StripeWebhook {
   logger: winston.Logger
+  peertubeHelpers: PeerTubeHelpers
   settingsManager: PluginSettingsManager
   storage: Storage
   stripe: Stripe | null = null
@@ -31,6 +33,7 @@ export class StripeWebhook {
     settingsManager: PluginSettingsManager
   ) {
     this.logger = peertubeHelpers.logger
+    this.peertubeHelpers = peertubeHelpers
     this.settingsManager = settingsManager
 
     this.storage = new Storage(storageManager)
@@ -125,16 +128,17 @@ export class StripeWebhook {
         throw Error(`Customer ${session.customer as string} is deleted`)
       }
 
-      const userId = customer.metadata.peertubeId
+      const metadataFieldName = getStripeCustomerMetadataFieldName(this.peertubeHelpers)
+      const userId = customer.metadata[metadataFieldName]
 
       if (userId === null) {
-        throw Error('customer.metadata.peertubeId is null.')
+        throw Error(`customer.metadata.${metadataFieldName} is null.`)
       }
 
       const parsedId = +userId
 
       if (isNaN(parsedId)) {
-        throw Error('customer.metadata.peertubeId is not a number: ' + userId)
+        throw Error(`customer.metadata.${metadataFieldName} is not a number: ' + userI`)
       }
 
       return parsedId
