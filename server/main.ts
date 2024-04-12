@@ -42,15 +42,9 @@ async function register ({
   }
 }): Promise<void> {
   const { logger } = peertubeHelpers
+  const storage = new Storage(storageManager)
   let stripePlans: Stripe.Plan[] = []
-
-  try {
-    stripePlans = await getStripeSubscriptionPlans(
-      await settingsManager.getSetting(SETTING_STRIPE_API_KEY) as string
-    )
-  } catch (err: any) {
-    logger.info('Couldn\'t fetch Stripe plans', { err })
-  }
+  let replacementVideoWithFiles: MVideoWithAllFiles
 
   registerSetting({
     name: SETTING_STRIPE_API_KEY,
@@ -79,17 +73,6 @@ async function register ({
   })
 
   registerSetting({
-    name: SETTING_STRIPE_SUBSCRIPTION_PLAN_ID,
-    label: 'Stripe plan used for subscription',
-    type: 'select',
-    options: stripePlans.map((plan) => ({
-      value: plan.id,
-      label: (plan.product as Stripe.Product)?.name ?? plan.id
-    })),
-    private: true
-  })
-
-  registerSetting({
     name: SETTING_REPLACEMENT_VIDEO,
     label: 'Replacement video URL',
     type: 'input',
@@ -100,12 +83,7 @@ async function register ({
       `
   })
 
-  const storage = new Storage(storageManager)
-  let replacementVideoWithFiles: MVideoWithAllFiles
-
-  const loadReplacementVideo = async (settings: SettingEntries): Promise<void> => {
-    let replacementVideoUrl = settings[SETTING_REPLACEMENT_VIDEO] as string
-
+  const loadReplacementVideo = async (replacementVideoUrl: string): Promise<void> => {
     if (!replacementVideoUrl) {
       logger.debug('No replacement video URL has been configured.')
       return
@@ -130,8 +108,32 @@ async function register ({
     replacementVideoWithFiles = await peertubeHelpers.videos.loadByIdOrUUIDWithFiles(replacementVideo.id)
   }
 
-  settingsManager.onSettingsChange(loadReplacementVideo)
-  await loadReplacementVideo(await settingsManager.getSettings([SETTING_REPLACEMENT_VIDEO]))
+  const registerStripePlanSetting = async (apiKey: string): Promise<void> => {
+    try {
+      stripePlans = await getStripeSubscriptionPlans(apiKey)
+    } catch (err: any) {
+      logger.info('Couldn\'t fetch Stripe plans', { err })
+    }
+
+    registerSetting({
+      name: SETTING_STRIPE_SUBSCRIPTION_PLAN_ID,
+      label: 'Stripe plan used for subscription',
+      type: 'select',
+      options: stripePlans.map((plan) => ({
+        value: plan.id,
+        label: (plan.product as Stripe.Product)?.name ?? plan.id
+      })),
+      private: true
+    })
+  }
+
+  const parseSettings = async (settings: SettingEntries): Promise<void> => {
+    await loadReplacementVideo(settings[SETTING_REPLACEMENT_VIDEO] as string)
+    await registerStripePlanSetting(settings[SETTING_STRIPE_API_KEY] as string)
+  }
+
+  settingsManager.onSettingsChange(parseSettings)
+  await parseSettings(await settingsManager.getSettings([SETTING_REPLACEMENT_VIDEO, SETTING_STRIPE_API_KEY]))
 
   registerHook({
     target: 'action:api.video.updated',
