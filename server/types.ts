@@ -1,13 +1,5 @@
 import Stripe from 'stripe'
 
-export declare const enum CustomVideoPrivacy {
-  PUBLIC = 1,
-  UNLISTED = 2,
-  PRIVATE = 3,
-  INTERNAL = 4,
-  PLUS_VIDEO = 67
-};
-
 export interface PluginUserInfo {
   paidUntil?: string
   hasPaymentFailed?: boolean

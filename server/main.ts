@@ -1,5 +1,4 @@
 import {
-  VideoPrivacy,
   type MVideo,
   type MVideoFormattableDetails,
   type RegisterServerOptions,
@@ -8,8 +7,6 @@ import {
   MVideoWithAllFiles,
   SettingEntries
 } from '@peertube/peertube-types'
-import type { ConstantManager } from
-  '@peertube/peertube-types/shared/models/plugins/server/plugin-constant-manager.model'
 
 import Stripe from 'stripe'
 import express from 'express'
@@ -23,7 +20,6 @@ import {
   SETTING_STRIPE_WEBHOOK_SECRET,
   VIDEO_FIELD_IS_PREMIUM_CONTENT
 } from '../shared/constants'
-import { CustomVideoPrivacy } from './types'
 import { Storage } from './storage'
 import { SubscriptionRoute } from './routes/subscription'
 import { getStripeSubscriptionPlans } from './utils'
@@ -37,10 +33,8 @@ async function register ({
   registerHook,
   registerSetting,
   settingsManager,
-  storageManager,
-  videoPrivacyManager
+  storageManager
 }: RegisterServerOptions & {
-  videoPrivacyManager: ConstantManager<CustomVideoPrivacy>
   peertubeHelpers: PeerTubeHelpers & {
     videos: {
       loadByIdOrUUIDWithFiles: (id: number | string) => Promise<MVideoWithAllFiles>
@@ -196,9 +190,6 @@ async function register ({
       return video
     }
   })
-
-  videoPrivacyManager.deleteConstant(VideoPrivacy.INTERNAL)
-  videoPrivacyManager.addConstant(VideoPrivacy.INTERNAL, 'Plus-innehåll')
 
   const router = getRouter()
   const stripeWebhook = new StripeWebhook(peertubeHelpers, storageManager, settingsManager)
