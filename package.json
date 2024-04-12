@@ -8,7 +8,7 @@
     {
       "script": "dist/client/index.js",
       "scopes": [
-        "my-account"
+        "common"
       ]
     }
   ],
