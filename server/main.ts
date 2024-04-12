@@ -138,7 +138,6 @@ async function register ({
   registerHook({
     target: 'action:api.video.updated',
     handler: async ({ video, body }: { video: MVideoFullLight, body: any }) => {
-      logger.debug('action update', body)
       if (body.pluginData[VIDEO_FIELD_IS_PREMIUM_CONTENT] === 'true') {
         logger.debug(`${video.uuid} is premium video`)
         await storage.addPremiumVideo(video.uuid)
