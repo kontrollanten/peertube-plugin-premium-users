@@ -25,9 +25,9 @@ import {
 } from '../shared/constants'
 import { CustomVideoPrivacy } from './types'
 import { Storage } from './storage'
-import { SubscriptionRoute } from './routes/subscription';
-import { getStripeSubscriptionPlans } from './utils';
-import { CheckoutRoute } from './routes/checkout';
+import { SubscriptionRoute } from './routes/subscription'
+import { getStripeSubscriptionPlans } from './utils'
+import { CheckoutRoute } from './routes/checkout'
 
 const uuidTranslator = shortUUID()
 
@@ -48,9 +48,15 @@ async function register ({
   }
 }): Promise<void> {
   const { logger } = peertubeHelpers
-  const stripePlans = await getStripeSubscriptionPlans(
-    await settingsManager.getSetting(SETTING_STRIPE_API_KEY) as string
-  )
+  let stripePlans: Stripe.Plan[] = []
+
+  try {
+    stripePlans = await getStripeSubscriptionPlans(
+      await settingsManager.getSetting(SETTING_STRIPE_API_KEY) as string
+    )
+  } catch (err: any) {
+    logger.info('Couldn\'t fetch Stripe plans', { err })
+  }
 
   registerSetting({
     name: SETTING_STRIPE_API_KEY,
