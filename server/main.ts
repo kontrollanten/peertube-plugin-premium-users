@@ -43,8 +43,7 @@ async function register ({
   videoPrivacyManager: ConstantManager<CustomVideoPrivacy>
   peertubeHelpers: PeerTubeHelpers & {
     videos: {
-      loadFull: (id: number | string) => Promise<MVideoFullLight & { hasPrivateStaticPath: () => boolean }>
-      loadWithFiles: (id: number | string) => Promise<MVideoWithAllFiles>
+      loadByIdOrUUIDWithFiles: (id: number | string) => Promise<MVideoWithAllFiles>
     }
   }
 }): Promise<void> {
@@ -128,7 +127,7 @@ async function register ({
       return
     }
 
-    replacementVideoWithFiles = await peertubeHelpers.videos.loadWithFiles(replacementVideo.id)
+    replacementVideoWithFiles = await peertubeHelpers.videos.loadByIdOrUUIDWithFiles(replacementVideo.id)
   }
 
   settingsManager.onSettingsChange(loadReplacementVideo)
