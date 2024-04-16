@@ -1,7 +1,7 @@
 {
   "name": "peertube-plugin-premium-users",
   "description": "PeerTube plugin premium user",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "author": "kontrollanten",
   "bugs": "https://framagit.org/kontrollanten/peertube-plugin-premium-user/issues",
   "clientScripts": [
