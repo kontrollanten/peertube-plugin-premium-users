@@ -6,9 +6,15 @@
   "bugs": "https://framagit.org/kontrollanten/peertube-plugin-premium-user/issues",
   "clientScripts": [
     {
-      "script": "dist/client/index.js",
+      "script": "dist/client/my-account.js",
       "scopes": [
-        "common"
+        "my-account"
+      ]
+    },
+    {
+      "script": "dist/client/video-edit.js",
+      "scopes": [
+        "video-edit"
       ]
     }
   ],

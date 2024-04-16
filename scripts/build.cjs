@@ -2,7 +2,8 @@ const path = require('path')
 const esbuild = require('esbuild')
 
 const clientFiles = [
-  'index'
+  'my-account',
+  'video-edit'
 ]
 
 const configs = clientFiles.map(f => ({

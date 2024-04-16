@@ -2,7 +2,7 @@ import type { RegisterClientOptions } from '@peertube/peertube-types/client'
 import { RegisterClientRouteOptions } from '@peertube/peertube-types/shared/models'
 import { Api } from './api'
 import { SubscriptionInvoice } from '../server/types'
-import { SETTING_STRIPE_CUSTOMER_PORTAL_URL, VIDEO_FIELD_IS_PREMIUM_CONTENT } from '../shared/constants'
+import { SETTING_STRIPE_CUSTOMER_PORTAL_URL } from '../shared/constants'
 import { UiBuilder } from './ui-builder'
 
 const formatDate = (date: string | number): string => {
@@ -13,7 +13,6 @@ const formatDate = (date: string | number): string => {
 
 async function register ({
   registerClientRoute,
-  registerVideoField,
   peertubeHelpers
 }: RegisterClientOptions & {
   registerClientRoute: (options: RegisterClientRouteOptions & {
@@ -26,31 +25,6 @@ async function register ({
 }): Promise<void> {
   const { translate } = peertubeHelpers
   const restApi = new Api(peertubeHelpers.getAuthHeader)
-
-  registerVideoField({
-    name: VIDEO_FIELD_IS_PREMIUM_CONTENT,
-    label: await translate('Premium content'),
-    type: 'select',
-    options: [
-      {
-        value: 'false',
-        label: await translate('Non-premium content')
-      },
-      {
-        value: 'true',
-        label: await translate('Premium content')
-      }
-    ],
-    default: false,
-    error: async (options) => {
-      console.log({ options })
-
-      return { error: false }
-    }
-  }, {
-    type: 'update',
-    tab: 'main'
-  })
 
   registerClientRoute({
     route: '/premium',
