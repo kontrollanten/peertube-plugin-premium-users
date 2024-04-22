@@ -43,8 +43,7 @@ async function register ({
         peertubeHelpers.showModal({
           title: await translate('Payment succeeded'),
           content: await translate(
-            `Your payment succeeded and will short be registered, 
-            it may take awhile depending on your payment method.`
+            'Your payment succeeded and will short be registered, it may take awhile depending on your payment method.'
           ),
           close: true
         })
@@ -68,7 +67,7 @@ async function register ({
             formatDate(subscription.cancelAt as string) + '.'
           cancelButtonText = await translate('Resume subscription')
         } else {
-          subscriptionDesc = 'Subscription will be renewed at ' +
+          subscriptionDesc = await translate('Subscription will be renewed at ') +
             formatDate((subscription.currentPeriodEnd as string)) +
             '.'
           cancelButtonText = await translate('Cancel subscription')
@@ -173,14 +172,14 @@ async function register ({
             ),
             uiBuilder.renderRow(
               [uiBuilder.p(await translate('Status'))],
-              [uiBuilder.p(`${payment.status ?? await translate('Canceled')}`)]
+              [uiBuilder.p(await translate(payment.status ?? 'Canceled'))]
             )
           ])
         ))
 
       if (isPremiumUser) {
         rootEl.appendChild(uiBuilder.renderRow(
-          [uiBuilder.h2(await translate('Betalningshistorik'))],
+          [uiBuilder.h2(await translate('Payment history'))],
           await renderInvoiceList(subscription.invoices ?? [])
         ))
       }

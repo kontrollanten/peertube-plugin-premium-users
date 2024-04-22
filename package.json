@@ -52,7 +52,7 @@
     "images": "public/images"
   },
   "translations": {
-    "fr-FR": "./languages/fr.json"
+    "sv-SE": "./languages/sv.json"
   },
   "devDependencies": {
     "@peertube/peertube-types": "^4.2.2",
