@@ -30,9 +30,9 @@ async function register ({
     route: '/premium',
     parentRoute: '/my-account',
     menuItem: {
-      label: await translate('Plus-konto')
+      label: await translate('Premium account')
     },
-    title: await translate('Plus-konto'),
+    title: await translate('Premium account'),
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     onMount: async ({ rootEl }): Promise<void> => {
       rootEl.className = 'plugin-premium-users my-account'
@@ -147,7 +147,9 @@ async function register ({
 
         paymentStatus.push(
           uiBuilder.p(await translate('You\'re not a premium user.')),
-          uiBuilder.p(await translate('As a premium user you\'ll get access to premium videos.')),
+          uiBuilder.p(
+            await translate('As a premium user you\'ll get access to premium videos and helps us to continue or work.')
+          ),
           button
         )
       }
