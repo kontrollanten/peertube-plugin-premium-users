@@ -2,6 +2,7 @@ const path = require('path')
 const esbuild = require('esbuild')
 
 const clientFiles = [
+  'common',
   'my-account',
   'video-edit'
 ]

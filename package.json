@@ -12,6 +12,12 @@
       ]
     },
     {
+      "script": "dist/client/common.js",
+      "scopes": [
+        "common"
+      ]
+    },
+    {
       "script": "dist/client/video-edit.js",
       "scopes": [
         "video-edit"

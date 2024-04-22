@@ -35,7 +35,7 @@ async function register ({
     title: await translate('Plus-konto'),
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     onMount: async ({ rootEl }): Promise<void> => {
-      rootEl.className = 'plugin-premium-users'
+      rootEl.className = 'plugin-premium-users my-account'
 
       const searchParams = new URLSearchParams(window.location.search)
 
@@ -51,13 +51,13 @@ async function register ({
       }
 
       const subscription = await restApi.getSubscription()
-      const isPlusUser = subscription.status === 'active'
+      const isPremiumUser = subscription.status === 'active'
 
       const uiBuilder = new UiBuilder(rootEl)
 
       const paymentStatus = []
 
-      if (isPlusUser) {
+      if (isPremiumUser) {
         let subscriptionDesc
         let cancelButtonText
 
@@ -139,13 +139,15 @@ async function register ({
                 ),
                 close: true
               })
+              button.removeAttribute('disabled')
 
               console.error('Couldn\'t create checkout', { err })
             })
         })
 
         paymentStatus.push(
-          uiBuilder.p(await translate('You\'re not a premium user')),
+          uiBuilder.p(await translate('You\'re not a premium user.')),
+          uiBuilder.p(await translate('As a premium user you\'ll get access to premium videos.')),
           button
         )
       }
@@ -174,10 +176,12 @@ async function register ({
           ])
         ))
 
-      rootEl.appendChild(uiBuilder.renderRow(
-        [uiBuilder.h2(await translate('Betalningshistorik'))],
-        await renderInvoiceList(subscription.invoices ?? [])
-      ))
+      if (isPremiumUser) {
+        rootEl.appendChild(uiBuilder.renderRow(
+          [uiBuilder.h2(await translate('Betalningshistorik'))],
+          await renderInvoiceList(subscription.invoices ?? [])
+        ))
+      }
     }
   })
 }

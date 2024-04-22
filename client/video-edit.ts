@@ -30,12 +30,7 @@ async function register ({
         label: await translate('Premium content')
       }
     ],
-    default: false,
-    error: async (options) => {
-      console.log({ options })
-
-      return { error: false }
-    }
+    default: false
   }, {
     type: 'update',
     tab: 'main'

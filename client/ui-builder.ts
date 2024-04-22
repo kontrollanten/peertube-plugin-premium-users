@@ -63,4 +63,12 @@ export class UiBuilder {
 
     return elem
   }
+
+  img (src: string, className: string): HTMLElement {
+    const elem = document.createElement('img')
+    elem.src = src
+    elem.className = className
+
+    return elem
+  }
 }

@@ -11,7 +11,28 @@
     margin-bottom: 10px;
   }
 
-  .grey-button.peertube-button-link {
-    margin-right: 10px;
+  .button-md {
+    padding: 10px 25px;
+    font-size: 18px;
+  }
+
+  &.my-account {
+    .grey-button.peertube-button-link {
+      margin-right: 10px;
+    }
+  }
+
+  &.become-premium {
+    max-width: 800px;
+
+    img {
+      max-width: 160px;
+      margin-bottom: 5rem;
+    }
+
+    .action-buttons {
+      margin-top: 5rem;
+      max-width: 300px;
+    }
   }
 }
