@@ -1,4 +1,4 @@
-import { RegisterClientOptions } from '@peertube/peertube-types/client'
+import { RegisterClientHelpers, RegisterClientOptions } from '@peertube/peertube-types/client'
 import { RegisterClientRouteOptions } from '@peertube/peertube-types/shared/models'
 import { UiBuilder } from './ui-builder'
 
@@ -7,6 +7,9 @@ export async function register ({
   registerClientRoute,
   registerHook
 }: RegisterClientOptions & {
+  peertubeHelpers: RegisterClientHelpers & {
+    getUser: any
+  }
   registerClientRoute: (options: RegisterClientRouteOptions & {
     menuItem?: {
       label: string
@@ -18,8 +21,13 @@ export async function register ({
   registerHook({
     target: 'filter:left-menu.links.create.result',
     handler: async (items: Array<{ key: string, links: any[] }>) => {
+      const user = peertubeHelpers.getUser()
       const premiumLink = peertubeHelpers.isLoggedIn() ? '/my-account/p/premium' : '/p/premium'
       const premiumLabel = await peertubeHelpers.translate('Become premium')
+
+      if (user?.isPremium) {
+        return items
+      }
 
       return items.map((subMenu) => {
         if (subMenu.key === 'on-instance') {

@@ -1,5 +1,6 @@
 import { PeerTubeHelpers } from '@peertube/peertube-types'
 import Stripe from 'stripe'
+import { PluginUserInfo } from './types'
 
 /**
  * Create instance unique field names to make it possible to have the same Stripe account
@@ -17,4 +18,14 @@ export const getStripeSubscriptionPlans = async (stripeApiKey: string): Promise<
   })
 
   return plans.data
+}
+
+export const isPremiumUser = (userInfo: PluginUserInfo): boolean => {
+  const ONE_DAY = 60 * 60 * 24 * 1000
+
+  if (!userInfo.paidUntil) {
+    return false
+  }
+
+  return (+new Date(userInfo.paidUntil) - +new Date()) > ONE_DAY
 }

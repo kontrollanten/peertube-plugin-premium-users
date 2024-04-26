@@ -5,7 +5,9 @@ import {
   PeerTubeHelpers,
   MVideoFullLight,
   MVideoWithAllFiles,
-  SettingEntries
+  SettingEntries,
+  MUser,
+  type serverHookObject
 } from '@peertube/peertube-types'
 
 import Stripe from 'stripe'
@@ -22,8 +24,13 @@ import {
 } from '../shared/constants'
 import { Storage } from './storage'
 import { SubscriptionRoute } from './routes/subscription'
-import { getStripeSubscriptionPlans } from './utils'
+import { getStripeSubscriptionPlans, isPremiumUser } from './utils'
 import { CheckoutRoute } from './routes/checkout'
+
+interface RegisterServerHookOptions {
+  target: (keyof typeof serverHookObject) | 'filter:api.user.me.get.result'
+  handler: Function
+}
 
 const uuidTranslator = shortUUID()
 
@@ -35,6 +42,7 @@ async function register ({
   settingsManager,
   storageManager
 }: RegisterServerOptions & {
+  registerHook: (options: RegisterServerHookOptions) => void
   peertubeHelpers: PeerTubeHelpers & {
     videos: {
       loadByIdOrUUIDWithFiles: (id: number | string) => Promise<MVideoWithAllFiles>
@@ -167,9 +175,8 @@ async function register ({
 
       logger.debug('Its a premium video, checking if user is a premium user.')
       const userInfo = await storage.getUserInfo(userId)
-      const ONE_DAY = 60 * 60 * 24 * 1000
 
-      if (userInfo.paidUntil && (+new Date(userInfo.paidUntil) - +new Date()) > ONE_DAY) {
+      if (isPremiumUser(userInfo)) {
         logger.debug('Premium user, returning the original video')
         return video
       }
@@ -189,6 +196,16 @@ async function register ({
       logger.debug('Non premium user, returning the following video: ', { playlist: video.getHLSPlaylist() })
 
       return video
+    }
+  })
+
+  registerHook({
+    target: 'filter:api.user.me.get.result',
+    handler: async (result: any, { user }: { user: MUser }) => {
+      const userInfo = await storage.getUserInfo(user.id)
+      result.isPremium = isPremiumUser(userInfo)
+
+      return result
     }
   })
 
