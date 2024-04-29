@@ -13,6 +13,7 @@ import {
 import Stripe from 'stripe'
 import express from 'express'
 import shortUUID from 'short-uuid'
+import sequelize from 'sequelize'
 import { StripeWebhook } from './routes/stripe-webhook'
 import {
   SETTING_REPLACEMENT_VIDEO,
@@ -39,8 +40,7 @@ async function register ({
   peertubeHelpers,
   registerHook,
   registerSetting,
-  settingsManager,
-  storageManager
+  settingsManager
 }: RegisterServerOptions & {
   registerHook: (options: RegisterServerHookOptions) => void
   peertubeHelpers: PeerTubeHelpers & {
@@ -50,7 +50,10 @@ async function register ({
   }
 }): Promise<void> {
   const { logger } = peertubeHelpers
-  const storage = new Storage(storageManager)
+  const storage = new Storage(peertubeHelpers.database as Pick<sequelize.Sequelize, 'query'>)
+
+  await storage.init()
+
   let stripePlans: Stripe.Plan[] = []
   let replacementVideoWithFiles: MVideoWithAllFiles
 
@@ -210,9 +213,9 @@ async function register ({
   })
 
   const router = getRouter()
-  const stripeWebhook = new StripeWebhook(peertubeHelpers, storageManager, settingsManager)
-  const subscripton = new SubscriptionRoute(peertubeHelpers, settingsManager, storageManager)
-  const checkout = new CheckoutRoute(peertubeHelpers, settingsManager, storageManager)
+  const stripeWebhook = new StripeWebhook(peertubeHelpers, storage, settingsManager)
+  const subscripton = new SubscriptionRoute(peertubeHelpers, settingsManager, storage)
+  const checkout = new CheckoutRoute(peertubeHelpers, settingsManager, storage)
 
   router.post(
     '/stripe-webhook',

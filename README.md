@@ -10,10 +10,11 @@ To become a premium user a user has to go to My account > Premium and click "Sub
 * Stripe plan whom premium users will subscribe to.
 * Replacement video to be shown for non-premium users.
 
-TODO:
+## TODO:
 * ~Support for cancel subscriptions.~
 * ~Remove payments from DB and get from API instead.~
 * ~Create checkout from API instead of static URL.~
 * ~Support change payment method.~
 * ~Listen to webhook to know when subscription has ended.~
 * Verify paymentStatus is accurate upon GET /subscriptions
+* ~Change storage to Postgres~

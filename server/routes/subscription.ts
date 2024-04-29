@@ -2,7 +2,6 @@ import {
   HttpStatusCode,
   type PeerTubeHelpers,
   type PluginSettingsManager,
-  type PluginStorageManager
 } from '@peertube/peertube-types'
 import express from 'express'
 import { Storage } from '../storage'
@@ -22,12 +21,12 @@ export class SubscriptionRoute {
   constructor (
     peertubeHelpers: PeerTubeHelpers,
     settingsManager: PluginSettingsManager,
-    storageManager: PluginStorageManager
+    storage: Storage
   ) {
     this.peertubeHelpers = peertubeHelpers
     this.settingsManager = settingsManager
 
-    this.storage = new Storage(storageManager)
+    this.storage = storage
   }
 
   private async getStripe (): Promise<Stripe> {
@@ -80,7 +79,7 @@ export class SubscriptionRoute {
     const user = await this.peertubeHelpers.user.getAuthUser(res)
     const userInfo = await this.storage.getUserInfo(user.id)
 
-    if (!userInfo.customerId) {
+    if (!userInfo?.customerId) {
       res.status(404).json({})
       return
     }
@@ -138,7 +137,7 @@ export class SubscriptionRoute {
 
     const stripe = await this.getStripe()
 
-    if (!userInfo.customerId) {
+    if (!userInfo?.customerId) {
       res.status(404).json({ message: 'No customerId found for user.' })
       return
     }

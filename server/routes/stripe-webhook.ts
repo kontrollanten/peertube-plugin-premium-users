@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-import type { PeerTubeHelpers, PluginSettingsManager, PluginStorageManager } from '@peertube/peertube-types'
+import type { PeerTubeHelpers, PluginSettingsManager } from '@peertube/peertube-types'
 
 import express from 'express'
 import Stripe from 'stripe'
@@ -29,14 +29,14 @@ export class StripeWebhook {
 
   constructor (
     peertubeHelpers: PeerTubeHelpers,
-    storageManager: PluginStorageManager,
+    storage: Storage,
     settingsManager: PluginSettingsManager
   ) {
     this.logger = peertubeHelpers.logger
     this.peertubeHelpers = peertubeHelpers
     this.settingsManager = settingsManager
 
-    this.storage = new Storage(storageManager)
+    this.storage = storage
   }
 
   routeHandler = async (req: express.Request, res: express.Response): Promise<void> => {
@@ -146,7 +146,7 @@ export class StripeWebhook {
 
   private readonly updateUserFromFailedPayment = async (session: Stripe.Invoice): Promise<void> => {
     const userId = await this.getUserIdFromSession(session)
-    const userInfo = await this.storage.getUserInfo(userId)
+    const userInfo = await this.storage.getUserInfo(userId) ?? {}
 
     userInfo.hasPaymentFailed = true
 
@@ -156,7 +156,7 @@ export class StripeWebhook {
   private readonly updateUserFromInvoice =
     async (session: Stripe.Invoice, subscription: Stripe.Subscription): Promise<void> => {
       const userId = await this.getUserIdFromSession(session)
-      const userInfo = await this.storage.getUserInfo(userId)
+      const userInfo = await this.storage.getUserInfo(userId) ?? {}
 
       userInfo.paidUntil = new Date(subscription.current_period_end * 1000).toISOString()
       userInfo.hasPaymentFailed = false
@@ -167,7 +167,7 @@ export class StripeWebhook {
   private readonly updateUserFromCheckout =
     async (session: Stripe.Checkout.Session, subscription: Stripe.Subscription): Promise<void> => {
       const userId = await this.getUserIdFromSession(session)
-      const userInfo = await this.storage.getUserInfo(userId)
+      const userInfo = await this.storage.getUserInfo(userId) ?? {}
 
       userInfo.paidUntil = new Date(subscription.current_period_end * 1000).toISOString()
       userInfo.customerId = session.customer as string

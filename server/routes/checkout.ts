@@ -5,7 +5,6 @@ import { SETTING_STRIPE_API_KEY, SETTING_STRIPE_SUBSCRIPTION_PLAN_ID } from '../
 import {
   type PeerTubeHelpers,
   type PluginSettingsManager,
-  type PluginStorageManager
 } from '@peertube/peertube-types'
 import { getStripeCustomerMetadataFieldName } from '../utils'
 
@@ -18,12 +17,11 @@ export class CheckoutRoute {
   constructor (
     peertubeHelpers: PeerTubeHelpers,
     settingsManager: PluginSettingsManager,
-    storageManager: PluginStorageManager
+    storage: Storage
   ) {
     this.peertubeHelpers = peertubeHelpers
     this.settingsManager = settingsManager
-
-    this.storage = new Storage(storageManager)
+    this.storage = storage
   }
 
   private async getStripe (): Promise<Stripe> {

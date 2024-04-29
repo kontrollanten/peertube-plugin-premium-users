@@ -20,10 +20,10 @@ export const getStripeSubscriptionPlans = async (stripeApiKey: string): Promise<
   return plans.data
 }
 
-export const isPremiumUser = (userInfo: PluginUserInfo): boolean => {
+export const isPremiumUser = (userInfo: PluginUserInfo | undefined): boolean => {
   const ONE_DAY = 60 * 60 * 24 * 1000
 
-  if (!userInfo.paidUntil) {
+  if (!userInfo?.paidUntil) {
     return false
   }
 
