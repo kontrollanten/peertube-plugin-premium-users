@@ -55,7 +55,6 @@
     "sv-SE": "./languages/sv.json"
   },
   "devDependencies": {
-    "@peertube/peertube-types": "^4.2.2",
     "@tsconfig/node16": "^1.0.3",
     "@typescript-eslint/eslint-plugin": "^5.33.0",
     "@typescript-eslint/parser": "^5.33.0",
@@ -69,6 +68,7 @@
     "typescript": "^5.4.3"
   },
   "dependencies": {
+    "@peertube/peertube-types": "^4.2.2",
     "@types/sequelize": "^4.28.20",
     "express": "^4.19.2",
     "short-uuid": "^4.2.2",
