@@ -1,6 +1,7 @@
 import { RegisterClientHelpers, RegisterClientOptions } from '@peertube/peertube-types/client'
 import { RegisterClientRouteOptions } from '@peertube/peertube-types/shared/models'
 import { UiBuilder } from './ui-builder'
+import { SETTING_ENABLE_PLUGIN } from '../shared/constants';
 
 export async function register ({
   peertubeHelpers,
@@ -21,6 +22,12 @@ export async function register ({
   registerHook({
     target: 'filter:left-menu.links.create.result',
     handler: async (items: Array<{ key: string, links: any[] }>) => {
+      const settings = await peertubeHelpers.getSettings()
+
+      if (!settings[SETTING_ENABLE_PLUGIN]) {
+        return items
+      }
+
       const user = peertubeHelpers.getUser()
       const premiumLink = peertubeHelpers.isLoggedIn() ? '/my-account/p/premium' : '/p/premium'
       const premiumLabel = await peertubeHelpers.translate('Become premium')

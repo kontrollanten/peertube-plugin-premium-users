@@ -2,7 +2,7 @@ import type { RegisterClientOptions } from '@peertube/peertube-types/client'
 import { RegisterClientRouteOptions } from '@peertube/peertube-types/shared/models'
 import { Api } from './api'
 import { SubscriptionInvoice } from '../server/types'
-import { SETTING_STRIPE_CUSTOMER_PORTAL_URL } from '../shared/constants'
+import { SETTING_ENABLE_PLUGIN, SETTING_STRIPE_CUSTOMER_PORTAL_URL } from '../shared/constants'
 import { UiBuilder } from './ui-builder'
 
 const formatDate = (date: string | number): string => {
@@ -16,7 +16,7 @@ async function register ({
   peertubeHelpers
 }: RegisterClientOptions & {
   registerClientRoute: (options: RegisterClientRouteOptions & {
-    menuItem: {
+    menuItem?: {
       label: string
     }
     title: string
@@ -25,13 +25,16 @@ async function register ({
 }): Promise<void> {
   const { translate } = peertubeHelpers
   const restApi = new Api(peertubeHelpers.getAuthHeader)
+  const settings = await peertubeHelpers.getSettings()
 
   registerClientRoute({
     route: '/premium',
     parentRoute: '/my-account',
-    menuItem: {
-      label: await translate('Premium account')
-    },
+    menuItem: settings[SETTING_ENABLE_PLUGIN]
+      ? {
+          label: await translate('Premium account')
+        }
+      : undefined,
     title: await translate('Premium account'),
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     onMount: async ({ rootEl }): Promise<void> => {

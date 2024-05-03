@@ -16,6 +16,7 @@ import shortUUID from 'short-uuid'
 import sequelize from 'sequelize'
 import { StripeWebhook } from './routes/stripe-webhook'
 import {
+  SETTING_ENABLE_PLUGIN,
   SETTING_REPLACEMENT_VIDEO,
   SETTING_STRIPE_API_KEY,
   SETTING_STRIPE_CUSTOMER_PORTAL_URL,
@@ -56,6 +57,7 @@ async function register ({
 
   let stripePlans: Stripe.Plan[] = []
   let replacementVideoWithFiles: MVideoWithAllFiles
+  let isPluginEnabled: boolean = await settingsManager.getSetting(SETTING_ENABLE_PLUGIN) as boolean
 
   registerSetting({
     name: SETTING_STRIPE_API_KEY,
@@ -91,6 +93,17 @@ async function register ({
     descriptionHTML: `
       URL to video that will be shown to non-premium users when trying to watch a premium video.
       Has to be an URL on this instance.
+      `
+  })
+
+  registerSetting({
+    name: SETTING_ENABLE_PLUGIN,
+    label: 'Enable plugin',
+    type: 'input-checkbox',
+    private: false,
+    default: false,
+    descriptionHTML: `
+      Whether the plugin is enabled for users.
       `
   })
 
@@ -139,12 +152,17 @@ async function register ({
   }
 
   const parseSettings = async (settings: SettingEntries): Promise<void> => {
+    isPluginEnabled = settings[SETTING_ENABLE_PLUGIN] as boolean
     await loadReplacementVideo(settings[SETTING_REPLACEMENT_VIDEO] as string)
     await registerStripePlanSetting(settings[SETTING_STRIPE_API_KEY] as string)
   }
 
   settingsManager.onSettingsChange(parseSettings)
-  await parseSettings(await settingsManager.getSettings([SETTING_REPLACEMENT_VIDEO, SETTING_STRIPE_API_KEY]))
+  await parseSettings(await settingsManager.getSettings([
+    SETTING_REPLACEMENT_VIDEO,
+    SETTING_STRIPE_API_KEY,
+    SETTING_ENABLE_PLUGIN
+  ]))
 
   registerHook({
     target: 'action:api.video.updated',
@@ -164,8 +182,13 @@ async function register ({
       video: MVideoFormattableDetails & { getMasterPlaylistUrl: () => string },
       { userId }: { videoId: number | string, userId: number }
     ): Promise<MVideo> => {
+      if (!isPluginEnabled) {
+        logger.debug('Plugin is disabled, returning original video.')
+        return video
+      }
+
       if (!replacementVideoWithFiles) {
-        logger.debug('No replacement video found.')
+        logger.debug('No replacement video found, returning original video.')
         return video
       }
 
