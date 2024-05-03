@@ -83,10 +83,10 @@ export class Storage {
     `, {
       replacements: {
         userId,
-        paidUntil: userInfo.paidUntil,
+        paidUntil: userInfo.paidUntil ?? null,
         hasPaymentFailed: userInfo.hasPaymentFailed ?? false,
-        subscriptionId: userInfo.subscriptionId,
-        customerId: userInfo.customerId
+        subscriptionId: userInfo.subscriptionId ?? null,
+        customerId: userInfo.customerId ?? null
       }
     })
   }
