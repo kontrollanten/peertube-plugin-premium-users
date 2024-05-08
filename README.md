@@ -7,7 +7,7 @@ To become a premium user a user has to go to My account > Premium and click "Sub
 ## Prerequisites
 * Stripe API key.
 * Stripe webhook listening for `checkout.session.completed`, `invoice.paid` and `invoice.payment_failed`.
-* Stripe plan whom premium users will subscribe to.
+* Stripe product whom premium users will subscribe to.
 * Replacement video to be shown for non-premium users.
 
 ## TODO:

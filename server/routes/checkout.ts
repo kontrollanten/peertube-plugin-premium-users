@@ -1,7 +1,7 @@
 import express from 'express'
 import Stripe from 'stripe'
 import { Storage } from '../storage'
-import { SETTING_STRIPE_API_KEY, SETTING_STRIPE_SUBSCRIPTION_PLAN_ID } from '../../shared/constants'
+import { SETTING_STRIPE_API_KEY } from '../../shared/constants'
 import {
   type PeerTubeHelpers,
   type PluginSettingsManager,
@@ -39,6 +39,7 @@ export class CheckoutRoute {
     const baseUrl = this.peertubeHelpers.config.getWebserverUrl()
     const stripe = await this.getStripe()
     const user = await this.peertubeHelpers.user.getAuthUser(res)
+    const { priceId } = req.body
 
     const customerRes = await stripe.customers.search({
       query: `email:"${user.email}"`
@@ -76,7 +77,7 @@ export class CheckoutRoute {
       customer: customer.id,
       line_items: [
         {
-          price: await this.settingsManager.getSetting(SETTING_STRIPE_SUBSCRIPTION_PLAN_ID) as string,
+          price: priceId,
           quantity: 1
         }
       ],

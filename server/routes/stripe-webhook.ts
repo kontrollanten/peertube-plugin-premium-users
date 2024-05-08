@@ -6,7 +6,7 @@ import Stripe from 'stripe'
 import winston from 'winston'
 import {
   SETTING_STRIPE_API_KEY,
-  SETTING_STRIPE_SUBSCRIPTION_PLAN_ID,
+  SETTING_STRIPE_PRODUCT_ID,
   SETTING_STRIPE_WEBHOOK_SECRET
 } from '../../shared/constants'
 import { Storage } from '../storage'
@@ -84,12 +84,17 @@ export class StripeWebhook {
       return
     }
 
-    const planId = await this.settingsManager.getSetting(SETTING_STRIPE_SUBSCRIPTION_PLAN_ID)
+    const productId = await this.settingsManager.getSetting(SETTING_STRIPE_PRODUCT_ID) as string
     const subscription = await stripe.subscriptions
       .retrieve((session as Stripe.Checkout.Session | Stripe.Invoice).subscription as string)
-    const plan = subscription.items.data.find(i => i.plan.id === planId)
+    const hasProductInSubcscription = subscription.items.data.some(i =>
+      i.price.product === productId
+    )
 
-    if (!plan) {
+    if (!hasProductInSubcscription) {
+      this.logger.debug('Subscription doesn\'t include product with id ' + productId)
+      res.status(200).end()
+
       return
     }
 

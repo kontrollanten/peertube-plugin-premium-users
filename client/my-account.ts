@@ -57,9 +57,8 @@ async function register ({
 
       const uiBuilder = new UiBuilder(rootEl)
 
-      const paymentStatus = []
-
       if (isPremiumUser) {
+        const paymentStatus = []
         let subscriptionDesc
         let cancelButtonText
 
@@ -121,47 +120,63 @@ async function register ({
           manageButton,
           cancelButton
         )
+
+        rootEl.appendChild(
+          uiBuilder.renderRow(
+            [uiBuilder.h2(await translate('Status'))],
+            paymentStatus
+          )
+        )
       } else {
-        const button = uiBuilder.a(await translate('Subscribe to become a premium user'), {
-          class: 'orange-button peertube-button-link'
-        })
+        const prices = await restApi.getPrices()
 
-        button.addEventListener('click', () => {
-          button.setAttribute('disabled', 'disabled')
+        const buttons = await Promise.all(prices.map(async (price, index) => {
+          const label = `${price.unit_amount / 100} ${price.currency.toUpperCase()} / ` +
+            await translate(price.recurring.interval)
+          const button = uiBuilder.a(label, {
+            class: 'orange-button peertube-button-link ' + (index === 0 ? '' : 'ms-4')
+          })
 
-          restApi.createCheckout()
-            .then(({ checkoutUrl }: { checkoutUrl: string }) => {
-              window.location.href = checkoutUrl
-            })
-            .catch(async err => {
-              peertubeHelpers.showModal({
-                title: await translate('Something went wrong'),
-                content: await translate(
-                  'Couldn\'t create subcsription due to technical issues. Please try again later.'
-                ),
-                close: true
+          button.addEventListener('click', () => {
+            button.setAttribute('disabled', 'disabled')
+
+            restApi.createCheckout(price.id)
+              .then(({ checkoutUrl }: { checkoutUrl: string }) => {
+                window.location.href = checkoutUrl
               })
-              button.removeAttribute('disabled')
+              .catch(async err => {
+                peertubeHelpers.showModal({
+                  title: await translate('Something went wrong'),
+                  content: await translate(
+                    'Couldn\'t create subcsription due to technical issues. Please try again later.'
+                  ),
+                  close: true
+                })
 
-              console.error('Couldn\'t create checkout', { err })
-            })
-        })
+                console.error('Couldn\'t create checkout', { err })
+              })
+              .finally(() => {
+                button.removeAttribute('disabled')
+              })
+          })
 
-        paymentStatus.push(
-          uiBuilder.p(await translate('You\'re not a premium user.')),
-          uiBuilder.p(
-            await translate('As a premium user you\'ll get access to premium videos and helps us to continue or work.')
-          ),
-          button
+          return button
+        }))
+
+        rootEl.appendChild(
+          uiBuilder.renderRow(
+            [uiBuilder.h2(await translate('Become premium'))],
+            [
+              uiBuilder.p(
+                await translate(
+                  'As a premium user you\'ll get access to premium videos and helps us to continue or work.'
+                )
+              ),
+              ...buttons
+            ]
+          )
         )
       }
-
-      rootEl.appendChild(
-        uiBuilder.renderRow(
-          [uiBuilder.h2(await translate('Status'))],
-          paymentStatus
-        )
-      )
 
       const renderInvoiceList = async (payments: SubscriptionInvoice[]): Promise<HTMLElement[]> =>
         Promise.all(payments.map(async (payment) =>

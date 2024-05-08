@@ -20,14 +20,15 @@ import {
   SETTING_REPLACEMENT_VIDEO,
   SETTING_STRIPE_API_KEY,
   SETTING_STRIPE_CUSTOMER_PORTAL_URL,
-  SETTING_STRIPE_SUBSCRIPTION_PLAN_ID,
+  SETTING_STRIPE_PRODUCT_ID,
   SETTING_STRIPE_WEBHOOK_SECRET,
   VIDEO_FIELD_IS_PREMIUM_CONTENT
 } from '../shared/constants'
 import { Storage } from './storage'
 import { SubscriptionRoute } from './routes/subscription'
-import { getStripeSubscriptionPlans, isPremiumUser } from './utils'
+import { getStripeProducts, isPremiumUser } from './utils'
 import { CheckoutRoute } from './routes/checkout'
+import { PriceRoute } from './routes/price'
 
 interface RegisterServerHookOptions {
   target: (keyof typeof serverHookObject) | 'filter:api.user.me.get.result'
@@ -55,7 +56,7 @@ async function register ({
 
   await storage.init()
 
-  let stripePlans: Stripe.Plan[] = []
+  let stripeProducts: Stripe.Product[] = []
   let replacementVideoWithFiles: MVideoWithAllFiles
   let isPluginEnabled: boolean = await settingsManager.getSetting(SETTING_ENABLE_PLUGIN) as boolean
 
@@ -132,20 +133,20 @@ async function register ({
     replacementVideoWithFiles = await peertubeHelpers.videos.loadByIdOrUUIDWithFiles(replacementVideo.id)
   }
 
-  const registerStripePlanSetting = async (apiKey: string): Promise<void> => {
+  const registerStripeProductIdSetting = async (apiKey: string): Promise<void> => {
     try {
-      stripePlans = await getStripeSubscriptionPlans(apiKey)
+      stripeProducts = await getStripeProducts(apiKey)
     } catch (err: any) {
-      logger.info('Couldn\'t fetch Stripe plans', { err })
+      logger.info('Couldn\'t fetch Stripe products', { err })
     }
 
     registerSetting({
-      name: SETTING_STRIPE_SUBSCRIPTION_PLAN_ID,
-      label: 'Stripe plan used for subscription',
+      name: SETTING_STRIPE_PRODUCT_ID,
+      label: 'Stripe product used for premium subscription',
       type: 'select',
-      options: stripePlans.map((plan) => ({
-        value: plan.id,
-        label: (plan.product as Stripe.Product)?.name ?? plan.id
+      options: stripeProducts.map((product) => ({
+        value: product.id,
+        label: product.name ?? product.id
       })),
       private: true
     })
@@ -154,7 +155,7 @@ async function register ({
   const parseSettings = async (settings: SettingEntries): Promise<void> => {
     isPluginEnabled = settings[SETTING_ENABLE_PLUGIN] as boolean
     await loadReplacementVideo(settings[SETTING_REPLACEMENT_VIDEO] as string)
-    await registerStripePlanSetting(settings[SETTING_STRIPE_API_KEY] as string)
+    await registerStripeProductIdSetting(settings[SETTING_STRIPE_API_KEY] as string)
   }
 
   settingsManager.onSettingsChange(parseSettings)
@@ -239,6 +240,7 @@ async function register ({
   const stripeWebhook = new StripeWebhook(peertubeHelpers, storage, settingsManager)
   const subscripton = new SubscriptionRoute(peertubeHelpers, settingsManager, storage)
   const checkout = new CheckoutRoute(peertubeHelpers, settingsManager, storage)
+  const price = new PriceRoute(peertubeHelpers, settingsManager)
 
   router.post(
     '/stripe-webhook',
@@ -263,6 +265,12 @@ async function register ({
     '/checkout',
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     checkout.post
+  )
+
+  router.get(
+    '/price',
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    price.get
   )
 }
 

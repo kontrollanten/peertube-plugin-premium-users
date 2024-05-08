@@ -10,14 +10,12 @@ export const getStripeCustomerMetadataFieldName = (peertubeHelpers: PeerTubeHelp
   return `${peertubeHelpers.config.getWebserverUrl()}-userId`
 }
 
-export const getStripeSubscriptionPlans = async (stripeApiKey: string): Promise<Stripe.Plan[]> => {
+export const getStripeProducts = async (stripeApiKey: string): Promise<Stripe.Product[]> => {
   const stripe = new Stripe(stripeApiKey)
 
-  const plans = await stripe.plans.list({
-    expand: ['data.product']
-  })
+  const products = await stripe.products.list()
 
-  return plans.data
+  return products.data
 }
 
 export const isPremiumUser = (userInfo: PluginUserInfo | undefined): boolean => {
