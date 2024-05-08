@@ -61,7 +61,7 @@ export class StripeWebhook {
       return
     }
 
-    this.logger.debug('✅ Success:', event.id)
+    this.logger.debug('✅ Success: ' + event.id)
 
     const session = event.data.object
 
