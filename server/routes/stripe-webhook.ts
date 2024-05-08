@@ -77,10 +77,14 @@ export class StripeWebhook {
     // https://docs.stripe.com/billing/subscriptions/build-subscriptions?platform=web&ui=stripe-hosted#provision-and-monitor
 
     if (!['checkout.session.completed', 'invoice.paid'].includes(event.type)) {
+      res.status(200).end()
+
       return
     }
 
     if (!(session as Stripe.Checkout.Session | Stripe.Invoice).subscription) {
+      res.status(200).end()
+
       return
     }
 
