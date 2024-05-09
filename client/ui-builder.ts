@@ -35,9 +35,9 @@ export class UiBuilder {
     return elem
   }
 
-  a (innerText: string, attrs?: { [key: string]: string }): HTMLElement {
+  a (innerHTML: string, attrs?: { [key: string]: string }): HTMLElement {
     const elem = document.createElement('a')
-    elem.innerText = innerText
+    elem.innerHTML = innerHTML
 
     for (const attr in attrs) {
       elem.setAttribute(attr, attrs[attr])

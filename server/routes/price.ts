@@ -3,8 +3,9 @@ import {
   type PluginSettingsManager,
 } from '@peertube/peertube-types'
 import express from 'express'
-import { SETTING_STRIPE_API_KEY, SETTING_STRIPE_PRODUCT_ID } from '../../shared/constants'
+import { SETTING_STRIPE_API_KEY, SETTING_STRIPE_COUPON_ID, SETTING_STRIPE_PRODUCT_ID } from '../../shared/constants'
 import Stripe from 'stripe'
+import { Price } from '../../shared/types'
 
 export class PriceRoute {
   peertubeHelpers: PeerTubeHelpers
@@ -33,6 +34,7 @@ export class PriceRoute {
   get = async (req: express.Request, res: express.Response): Promise<void> => {
     const stripe = await this.getStripe()
     const productId = await this.settingsManager.getSetting(SETTING_STRIPE_PRODUCT_ID) as string
+    const couponId = await this.settingsManager.getSetting(SETTING_STRIPE_COUPON_ID) as string
 
     try {
       const result = await stripe.prices.list({
@@ -41,12 +43,19 @@ export class PriceRoute {
         type: 'recurring',
         limit: 12
       })
+      let coupon: Stripe.Coupon | undefined
 
-      res.json(result.data.filter(price => !price.deleted))
+      if (couponId) {
+        coupon = await stripe.coupons.retrieve(couponId)
+      }
+
+      const prices: Price[] = result.data.filter(price => !price.deleted).map(p => ({ ...p, coupon }))
+
+      res.json(prices)
     } catch (err: any) {
       this.peertubeHelpers.logger.error('Couldn\'t retrieve products', { err })
 
-      res.status(err.statusCode).json({
+      res.status(err.statusCode || 500).json({
         message: err.raw?.message
       })
     }

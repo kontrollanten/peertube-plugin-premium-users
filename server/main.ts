@@ -19,6 +19,7 @@ import {
   SETTING_ENABLE_PLUGIN,
   SETTING_REPLACEMENT_VIDEO,
   SETTING_STRIPE_API_KEY,
+  SETTING_STRIPE_COUPON_ID,
   SETTING_STRIPE_CUSTOMER_PORTAL_URL,
   SETTING_STRIPE_PRODUCT_ID,
   SETTING_STRIPE_WEBHOOK_SECRET,
@@ -26,7 +27,7 @@ import {
 } from '../shared/constants'
 import { Storage } from './storage'
 import { SubscriptionRoute } from './routes/subscription'
-import { getStripeProducts, isPremiumUser } from './utils'
+import { getStripeCoupons, getStripeProducts, isPremiumUser } from './utils'
 import { CheckoutRoute } from './routes/checkout'
 import { PriceRoute } from './routes/price'
 
@@ -56,7 +57,6 @@ async function register ({
 
   await storage.init()
 
-  let stripeProducts: Stripe.Product[] = []
   let replacementVideoWithFiles: MVideoWithAllFiles
   let isPluginEnabled: boolean = await settingsManager.getSetting(SETTING_ENABLE_PLUGIN) as boolean
 
@@ -134,6 +134,8 @@ async function register ({
   }
 
   const registerStripeProductIdSetting = async (apiKey: string): Promise<void> => {
+    let stripeProducts: Stripe.Product[] = []
+
     try {
       stripeProducts = await getStripeProducts(apiKey)
     } catch (err: any) {
@@ -152,10 +154,46 @@ async function register ({
     })
   }
 
+  const registerStripeCouponIdSetting = async (apiKey: string): Promise<void> => {
+    let stripeCoupons: Stripe.Coupon[] = []
+
+    try {
+      stripeCoupons = await getStripeCoupons(apiKey)
+    } catch (err: any) {
+      logger.info('Couldn\'t fetch Stripe products', { err })
+    }
+
+    registerSetting({
+      name: SETTING_STRIPE_COUPON_ID,
+      label: 'Select a coupon if you\'d like to apply a coupon to the subcription.',
+      type: 'select',
+      default: '',
+      options: [
+        {
+          label: 'None',
+          value: ''
+        },
+        ...stripeCoupons.filter(c => c.valid).map((coupon) => ({
+          value: coupon.id,
+          label: coupon.name as string + ' (' +
+            (coupon.amount_off
+              ? (coupon.amount_off / 100).toString() + ' ' +
+            (coupon.currency ?? '')
+              : (coupon.percent_off?.toString() ?? '') + ' %') +
+            ')'
+        }))
+      ],
+      private: true
+    })
+  }
+
   const parseSettings = async (settings: SettingEntries): Promise<void> => {
     isPluginEnabled = settings[SETTING_ENABLE_PLUGIN] as boolean
-    await loadReplacementVideo(settings[SETTING_REPLACEMENT_VIDEO] as string)
-    await registerStripeProductIdSetting(settings[SETTING_STRIPE_API_KEY] as string)
+    await Promise.all([
+      loadReplacementVideo(settings[SETTING_REPLACEMENT_VIDEO] as string),
+      registerStripeProductIdSetting(settings[SETTING_STRIPE_API_KEY] as string),
+      registerStripeCouponIdSetting(settings[SETTING_STRIPE_API_KEY] as string)
+    ])
   }
 
   settingsManager.onSettingsChange(parseSettings)

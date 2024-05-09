@@ -2,6 +2,7 @@ import type { RegisterClientOptions } from '@peertube/peertube-types/client'
 import { RegisterClientRouteOptions } from '@peertube/peertube-types/shared/models'
 import { Api } from './api'
 import { SubscriptionInvoice } from '../server/types'
+import { Price } from '../shared/types'
 import { SETTING_ENABLE_PLUGIN, SETTING_STRIPE_CUSTOMER_PORTAL_URL } from '../shared/constants'
 import { UiBuilder } from './ui-builder'
 
@@ -45,6 +46,9 @@ async function register ({
       if (searchParams.get('checkout_status') === 'success') {
         peertubeHelpers.showModal({
           title: await translate('Payment succeeded'),
+          cancel: {
+            value: await translate('Close')
+          },
           content: await translate(
             'Your payment succeeded and will short be registered, it may take awhile depending on your payment method.'
           ),
@@ -129,10 +133,51 @@ async function register ({
         )
       } else {
         const prices = await restApi.getPrices()
+        let hasDiscount = false
+
+        const getDiscountedPrice = (price: Price): number | null => {
+          if (!price.coupon?.valid) return null
+          if (!price.unit_amount) return null
+
+          if (price.coupon.amount_off) {
+            return (price.unit_amount - price.coupon.amount_off) / 100
+          }
+
+          if (price.coupon.percent_off) {
+            return Math.round((price.unit_amount - (price.unit_amount * (price.coupon.percent_off / 100))) / 100)
+          }
+
+          return null
+        }
+
+        const formatAmount = (amount: number, currency: string): string => new Intl.NumberFormat(navigator.language, {
+          style: 'currency',
+          currency,
+          minimumFractionDigits: 0
+        }).format(
+          amount
+        )
+        let discountInfo
 
         const buttons = await Promise.all(prices.map(async (price, index) => {
-          const label = `${price.unit_amount / 100} ${price.currency.toUpperCase()} / ` +
-            await translate(price.recurring.interval)
+          const discountedPrice = getDiscountedPrice(price)
+          let label
+
+          if (discountedPrice) {
+            hasDiscount = true
+            label = `
+            <span class="text-decoration-line-through">
+              ${formatAmount(price.unit_amount as number / 100, price.currency)}
+            </span> 
+            ${formatAmount(discountedPrice, price.currency)}`
+          } else {
+            label = formatAmount(price.unit_amount as number / 100, price.currency)
+          }
+
+          if (price.recurring?.interval) {
+            label += ' / ' + await translate(price.recurring.interval)
+          }
+
           const button = uiBuilder.a(label, {
             class: 'orange-button peertube-button-link ' + (index === 0 ? '' : 'ms-4')
           })
@@ -140,7 +185,7 @@ async function register ({
           button.addEventListener('click', () => {
             button.setAttribute('disabled', 'disabled')
 
-            restApi.createCheckout(price.id)
+            restApi.createCheckout(price.id, price.coupon?.id)
               .then(({ checkoutUrl }: { checkoutUrl: string }) => {
                 window.location.href = checkoutUrl
               })
@@ -163,6 +208,32 @@ async function register ({
           return button
         }))
 
+        if (hasDiscount) {
+          const price = prices[0]
+          const couponName = price.coupon?.name as string
+          const discount = price.coupon?.percent_off
+            ? `${price.coupon.percent_off} %`
+            : formatAmount(price.coupon?.amount_off ?? 0, price.currency)
+          const discountDuration = (price.coupon?.duration === 'once'
+            ? await translate('the first payment')
+            : price.coupon?.duration === 'forever'
+              ? await translate('forever')
+              : await translate('the first _MONTHS_COUNT_ months'))
+            .replace('_MONTHS_COUNT_', String(price.coupon?.duration_in_months))
+
+          discountInfo = uiBuilder.div([
+            uiBuilder.p(
+              (await translate(
+                'Right now we\'ve _COUPON_NAME_ which will give you _DISCOUNT_ off _DISCOUNT_DURATION_.'
+              ))
+                .replace('_COUPON_NAME_', couponName)
+                .replace('_DISCOUNT_', discount)
+                .replace('_DISCOUNT_DURATION_', discountDuration)
+            )
+          ],
+          'fw-bold')
+        }
+
         rootEl.appendChild(
           uiBuilder.renderRow(
             [uiBuilder.h2(await translate('Become premium'))],
@@ -172,6 +243,7 @@ async function register ({
                   'As a premium user you\'ll get access to premium videos and helps us to continue or work.'
                 )
               ),
+              discountInfo ?? uiBuilder.div([]),
               ...buttons
             ]
           )

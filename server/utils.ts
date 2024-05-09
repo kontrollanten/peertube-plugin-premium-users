@@ -18,6 +18,14 @@ export const getStripeProducts = async (stripeApiKey: string): Promise<Stripe.Pr
   return products.data
 }
 
+export const getStripeCoupons = async (stripeApiKey: string): Promise<Stripe.Coupon[]> => {
+  const stripe = new Stripe(stripeApiKey)
+
+  const coupons = await stripe.coupons.list()
+
+  return coupons.data
+}
+
 export const isPremiumUser = (userInfo: PluginUserInfo | undefined): boolean => {
   const ONE_DAY = 60 * 60 * 24 * 1000
 

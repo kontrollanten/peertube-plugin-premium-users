@@ -1,14 +1,7 @@
 import { MyUser } from '@peertube/peertube-types/shared/models'
 import packageJson from '../package.json'
 import { Subscription } from '../server/types'
-
-export interface Price {
-  id: string
-  type: string
-  unit_amount: number
-  currency: string
-  recurring: { interval: string }
-}
+import { Price } from '../shared/types'
 
 export class Api {
   getAuthHeader: () => { Authorization: string } | undefined
@@ -64,8 +57,9 @@ export class Api {
     return this.patch(this.pluginBasePath + '/subscription', body)
   }
 
-  async createCheckout (priceId: string): Promise<{ checkoutUrl: string}> {
+  async createCheckout (priceId: string, couponId?: string): Promise<{ checkoutUrl: string}> {
     return this.post(this.pluginBasePath + '/checkout', {
+      couponId,
       priceId
     })
   }

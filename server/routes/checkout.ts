@@ -39,7 +39,7 @@ export class CheckoutRoute {
     const baseUrl = this.peertubeHelpers.config.getWebserverUrl()
     const stripe = await this.getStripe()
     const user = await this.peertubeHelpers.user.getAuthUser(res)
-    const { priceId } = req.body
+    const { couponId, priceId } = req.body
 
     const customerRes = await stripe.customers.search({
       query: `email:"${user.email}"`
@@ -75,6 +75,11 @@ export class CheckoutRoute {
     const session = await stripe.checkout.sessions.create({
       billing_address_collection: 'auto',
       customer: customer.id,
+      discounts: [
+        {
+          coupon: couponId
+        }
+      ],
       line_items: [
         {
           price: priceId,
