@@ -71,4 +71,16 @@ export class UiBuilder {
 
     return elem
   }
+
+  ul (children: string[]): HTMLElement {
+    const ul = document.createElement('ul')
+
+    children.forEach((child) => {
+      const li = document.createElement('li')
+      li.innerText = child
+      ul.appendChild(li)
+    })
+
+    return ul
+  }
 }
