@@ -6,7 +6,7 @@
   "bugs": "https://framagit.org/kontrollanten/peertube-plugin-premium-user/issues",
   "clientScripts": [
     {
-      "script": "dist/client/my-account.js",
+      "script": "dist/client/my-account/index.js",
       "scopes": [
         "my-account"
       ]

@@ -3,7 +3,7 @@ const esbuild = require('esbuild')
 
 const clientFiles = [
   'common',
-  'my-account',
+  'my-account/index',
   'video-edit'
 ]
 
