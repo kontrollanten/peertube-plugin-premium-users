@@ -48,57 +48,72 @@ export class CheckoutRoute {
 
     if (!customer) {
       this.peertubeHelpers.logger.debug('No customer found, will create one with email ' + user.email)
-      customer = await stripe.customers.create({
-        email: user.email,
-        name: user.username,
-        metadata: {
-          [getStripeCustomerMetadataFieldName(this.peertubeHelpers)]: user.id
-        }
-      })
+
+      try {
+        customer = await stripe.customers.create({
+          email: user.email,
+          name: user.username,
+          metadata: {
+            [getStripeCustomerMetadataFieldName(this.peertubeHelpers)]: user.id
+          }
+        })
+      } catch (err) {
+        this.peertubeHelpers.logger.error('Failed to create customer', { err })
+      }
     }
 
-    if (!customer.metadata[getStripeCustomerMetadataFieldName(this.peertubeHelpers)]) {
+    if (customer && !customer.metadata[getStripeCustomerMetadataFieldName(this.peertubeHelpers)]) {
       this.peertubeHelpers.logger.debug(
         'Customer seems to\'ve been created outside of Peertube, will add Peertube user id.'
       )
 
-      await stripe.customers.update(customer.id, {
-        metadata: {
-          ...customer.metadata,
-          [getStripeCustomerMetadataFieldName(this.peertubeHelpers)]: user.id
-        }
-      })
+      try {
+        await stripe.customers.update(customer.id, {
+          metadata: {
+            ...customer.metadata,
+            [getStripeCustomerMetadataFieldName(this.peertubeHelpers)]: user.id
+          }
+        })
+      } catch (err) {
+        this.peertubeHelpers.logger.error('Failed to update customer', { err })
+      }
     }
 
     this.peertubeHelpers.logger.debug('Will create a checkout with customer', { customer })
 
-    const session = await stripe.checkout.sessions.create({
-      billing_address_collection: 'auto',
-      customer: customer.id,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1
-        }
-      ],
-      mode: 'subscription',
-      success_url: `${baseUrl}/my-account/p/premium?checkout_status=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/my-account/p/premium?checkout_status=canceled`,
-      ...((!couponId || allowPromotionCodes)
-        ? {
-            allow_promotion_codes: true
+    try {
+      const session = await stripe.checkout.sessions.create({
+        billing_address_collection: 'auto',
+        customer: customer?.id,
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1
           }
-        : {
-            discounts: [
-              {
-                coupon: couponId
-              }
-            ]
-          })
-    })
+        ],
+        mode: 'subscription',
+        success_url: `${baseUrl}/my-account/p/premium?checkout_status=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/my-account/p/premium?checkout_status=canceled`,
+        ...((!couponId || allowPromotionCodes)
+          ? {
+              allow_promotion_codes: true
+            }
+          : {
+              discounts: [
+                {
+                  coupon: couponId
+                }
+              ]
+            })
+      })
 
-    res.json({
-      checkoutUrl: session.url
-    })
+      res.json({
+        checkoutUrl: session.url
+      })
+    } catch (err) {
+      this.peertubeHelpers.logger.error('Failed to create checkout session', { err })
+
+      res.status(500).json({})
+    }
   }
 }
