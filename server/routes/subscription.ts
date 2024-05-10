@@ -89,9 +89,7 @@ export class SubscriptionRoute {
     const subscription = await this.getStripeSubscription(res, userInfo.customerId)
 
     if (!subscription) {
-      /**
-       * TODO: Needs to return some HTTP response here
-       */
+      res.status(404).json({})
       return
     }
 
