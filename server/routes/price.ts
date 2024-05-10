@@ -1,6 +1,6 @@
 import {
   type PeerTubeHelpers,
-  type PluginSettingsManager,
+  type PluginSettingsManager
 } from '@peertube/peertube-types'
 import express from 'express'
 import { SETTING_STRIPE_API_KEY, SETTING_STRIPE_COUPON_ID, SETTING_STRIPE_PRODUCT_ID } from '../../shared/constants'
