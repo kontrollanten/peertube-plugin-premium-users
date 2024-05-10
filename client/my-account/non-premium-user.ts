@@ -127,11 +127,13 @@ export const renderNonPremiumPage = async ({
         ),
         'fw-bold'
       ),
-      uiBuilder.ul([
-        discount + ' ' + discountForHowLongDesc,
-        (await translate('You\'ll save AMOUNT_TO_SAVE.'))
-          .replace('AMOUNT_TO_SAVE', String(formatAmount(Math.round(amountToSave), price.currency)))
-      ]),
+      ...(discountedPrice === null
+        ? []
+        : [uiBuilder.ul([
+            discount + ' ' + discountForHowLongDesc,
+            (await translate('You\'ll save AMOUNT_TO_SAVE.'))
+              .replace('AMOUNT_TO_SAVE', String(formatAmount(Math.round(amountToSave), price.currency)))
+          ])]),
       button
     ])
   }))
