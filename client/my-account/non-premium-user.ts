@@ -2,6 +2,7 @@ import { RegisterClientHelpers } from '@peertube/peertube-types/client'
 import { UiBuilder } from '../ui-builder'
 import { Price } from '../../shared/types'
 import { Api } from '../api'
+import { trackGAAction } from '../utils'
 
 const formatAmount = (amount: number, currency: string): string => new Intl.NumberFormat(navigator.language, {
   style: 'currency',
@@ -26,6 +27,10 @@ const getDiscountedPrice = (price: Price): number | null => {
   return null
 }
 
+const getDiscount = (price: Price): string => price.coupon?.percent_off
+  ? `${price.coupon.percent_off} %`
+  : formatAmount(price.coupon?.amount_off ?? 0, price.currency)
+
 export const renderNonPremiumPage = async ({
   peertubeHelpers,
   rootEl
@@ -38,8 +43,21 @@ export const renderNonPremiumPage = async ({
   const uiBuilder = new UiBuilder(rootEl)
   const prices = await restApi.getPrices()
 
+  trackGAAction('view_item_list', {
+    items: prices.map((price) => ({
+      item_id: price.product as string,
+      item_name: 'Premium subscription',
+      item_variant: price.recurring?.interval,
+      price: price.unit_amount ?? 0,
+      discount: price.unit_amount ? price.unit_amount - (getDiscountedPrice(price) ?? 0) : 0,
+      coupon: price.coupon?.name ?? undefined,
+      quantity: 1
+    }))
+  })
+
   const columns = await Promise.all(prices.map(async (price) => {
     const discountedPrice = getDiscountedPrice(price)
+    const discount = getDiscount(price)
     let label
 
     if (discountedPrice !== null) {
@@ -61,6 +79,21 @@ export const renderNonPremiumPage = async ({
 
     button.addEventListener('click', () => {
       button.setAttribute('disabled', 'disabled')
+      trackGAAction('add_to_cart', {
+        value: discountedPrice === null ? (price.unit_amount ?? 0) / 100 : discountedPrice,
+        currency: price.currency,
+        items: [
+          {
+            item_id: price.product as string,
+            item_name: 'Premium subscription',
+            item_variant: price.recurring?.interval,
+            price: price.unit_amount ?? 0,
+            discount: price.unit_amount ? price.unit_amount - (discountedPrice ?? 0) : 0,
+            coupon: price.coupon?.name ?? undefined,
+            quantity: 1
+          }
+        ]
+      })
 
       restApi.createCheckout({
         allowPromotionCodes: !!(new URLSearchParams(window.location.search).get('allowPromotionCodes')),
@@ -116,9 +149,6 @@ export const renderNonPremiumPage = async ({
         ) / 100
       }
     }
-    const discount = price.coupon?.percent_off
-      ? `${price.coupon.percent_off} %`
-      : formatAmount(price.coupon?.amount_off ?? 0, price.currency)
 
     return uiBuilder.div([
       uiBuilder.p(

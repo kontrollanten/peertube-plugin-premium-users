@@ -2,6 +2,7 @@ import { RegisterClientHelpers } from '@peertube/peertube-types/client'
 import { Api } from '../api'
 import { renderPremiumPage } from './premium-user'
 import { renderNonPremiumPage } from './non-premium-user'
+import { trackGAAction } from '../utils'
 
 export const buildOnMount = (peertubeHelpers: RegisterClientHelpers) =>
   async ({ rootEl }: { rootEl: HTMLElement }): Promise<void> => {
@@ -12,6 +13,8 @@ export const buildOnMount = (peertubeHelpers: RegisterClientHelpers) =>
     const searchParams = new URLSearchParams(window.location.search)
 
     if (searchParams.get('checkout_status') === 'success') {
+      trackGAAction('purchase')
+
       peertubeHelpers.showModal({
         title: await translate('Payment succeeded'),
         cancel: {

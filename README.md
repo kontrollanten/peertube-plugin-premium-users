@@ -18,3 +18,4 @@ To become a premium user a user has to go to My account > Premium and click "Sub
 * ~Listen to webhook to know when subscription has ended.~
 * Verify paymentStatus is accurate upon GET /subscriptions
 * ~Change storage to Postgres~
+* ~Add Google Analytics support.~

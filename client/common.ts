@@ -2,6 +2,7 @@ import { RegisterClientHelpers, RegisterClientOptions } from '@peertube/peertube
 import { RegisterClientRouteOptions } from '@peertube/peertube-types/shared/models'
 import { UiBuilder } from './ui-builder'
 import { SETTING_ENABLE_PLUGIN } from '../shared/constants';
+import { trackGAAction } from './utils';
 
 export async function register ({
   peertubeHelpers,
@@ -84,13 +85,17 @@ export async function register ({
     }
   })
 
-  const handleRegisterRedirect = (): void => {
+  const handleRegisterRedirect = (origin: string): Function => (): void => {
     const redirect = new URLSearchParams(window.location.search).get('redirect')
 
     if (redirect) {
       registerHook({
         target: 'action:auth-user.logged-in',
         handler: () => {
+          trackGAAction('tutorial_complete', {
+            event_label: origin
+          })
+
           window.location.href = redirect
         }
       })
@@ -99,12 +104,12 @@ export async function register ({
 
   registerHook({
     target: 'action:login.init',
-    handler: handleRegisterRedirect
+    handler: handleRegisterRedirect('login')
   })
 
   registerHook({
     target: 'action:signup.register.init',
-    handler: handleRegisterRedirect
+    handler: handleRegisterRedirect('signup')
   })
 
   registerClientRoute({
@@ -116,6 +121,8 @@ export async function register ({
         window.location.href = '/my-account/p/premium'
         return
       }
+
+      trackGAAction('tutorial_begin')
 
       const uiBuilder = new UiBuilder(rootEl)
 
