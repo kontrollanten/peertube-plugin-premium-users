@@ -57,8 +57,11 @@ export class Api {
     return this.patch(this.pluginBasePath + '/subscription', body)
   }
 
-  async createCheckout (priceId: string, couponId?: string): Promise<{ checkoutUrl: string}> {
+  async createCheckout (
+    { allowPromotionCodes, couponId, priceId }: { allowPromotionCodes?: boolean, couponId?: string, priceId: string }
+  ): Promise<{ checkoutUrl: string}> {
     return this.post(this.pluginBasePath + '/checkout', {
+      allowPromotionCodes,
       couponId,
       priceId
     })

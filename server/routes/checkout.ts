@@ -4,7 +4,7 @@ import { Storage } from '../storage'
 import { SETTING_STRIPE_API_KEY } from '../../shared/constants'
 import {
   type PeerTubeHelpers,
-  type PluginSettingsManager,
+  type PluginSettingsManager
 } from '@peertube/peertube-types'
 import { getStripeCustomerMetadataFieldName } from '../utils'
 
@@ -39,7 +39,7 @@ export class CheckoutRoute {
     const baseUrl = this.peertubeHelpers.config.getWebserverUrl()
     const stripe = await this.getStripe()
     const user = await this.peertubeHelpers.user.getAuthUser(res)
-    const { couponId, priceId } = req.body
+    const { allowPromotionCodes, couponId, priceId } = req.body
 
     const customerRes = await stripe.customers.search({
       query: `email:"${user.email}"`
@@ -75,11 +75,6 @@ export class CheckoutRoute {
     const session = await stripe.checkout.sessions.create({
       billing_address_collection: 'auto',
       customer: customer.id,
-      discounts: [
-        {
-          coupon: couponId
-        }
-      ],
       line_items: [
         {
           price: priceId,
@@ -88,7 +83,18 @@ export class CheckoutRoute {
       ],
       mode: 'subscription',
       success_url: `${baseUrl}/my-account/p/premium?checkout_status=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/my-account/p/premium?checkout_status=canceled`
+      cancel_url: `${baseUrl}/my-account/p/premium?checkout_status=canceled`,
+      ...((!couponId || allowPromotionCodes)
+        ? {
+            allow_promotion_codes: true
+          }
+        : {
+            discounts: [
+              {
+                coupon: couponId
+              }
+            ]
+          })
     })
 
     res.json({

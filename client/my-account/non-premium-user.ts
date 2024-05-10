@@ -62,7 +62,11 @@ export const renderNonPremiumPage = async ({
     button.addEventListener('click', () => {
       button.setAttribute('disabled', 'disabled')
 
-      restApi.createCheckout(price.id, price.coupon?.id)
+      restApi.createCheckout({
+        allowPromotionCodes: !!(new URLSearchParams(window.location.search).get('allowPromotionCodes')),
+        couponId: price.coupon?.id,
+        priceId: price.id
+      })
         .then(({ checkoutUrl }: { checkoutUrl: string }) => {
           window.location.href = checkoutUrl
         })
