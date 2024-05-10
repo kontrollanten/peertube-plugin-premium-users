@@ -42,7 +42,7 @@ export const renderNonPremiumPage = async ({
     const discountedPrice = getDiscountedPrice(price)
     let label
 
-    if (discountedPrice) {
+    if (discountedPrice !== null) {
       label = `
     <span class="original-price">
       ${formatAmount(price.unit_amount as number / 100, price.currency)}</span> 
