@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { Storage } from '../storage'
 import { SETTING_STRIPE_API_KEY } from '../../shared/constants'
 import {
+  MUserDefault,
   type PeerTubeHelpers,
   type PluginSettingsManager
 } from '@peertube/peertube-types'
@@ -38,7 +39,13 @@ export class CheckoutRoute {
   post = async (req: express.Request, res: express.Response): Promise<void> => {
     const baseUrl = this.peertubeHelpers.config.getWebserverUrl()
     const stripe = await this.getStripe()
-    const user = await this.peertubeHelpers.user.getAuthUser(res)
+    const user = await this.peertubeHelpers.user.getAuthUser(res) as MUserDefault | undefined
+
+    if (!user) {
+      res.status(401).json({})
+      return
+    }
+
     const { allowPromotionCodes, couponId, priceId } = req.body
 
     const customerRes = await stripe.customers.search({

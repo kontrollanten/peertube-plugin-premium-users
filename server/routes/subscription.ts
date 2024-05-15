@@ -1,5 +1,6 @@
 import {
   HttpStatusCode,
+  MUserDefault,
   type PeerTubeHelpers,
   type PluginSettingsManager,
 } from '@peertube/peertube-types'
@@ -76,7 +77,13 @@ export class SubscriptionRoute {
 
   get = async (req: express.Request, res: express.Response): Promise<void> => {
     const stripe = await this.getStripe()
-    const user = await this.peertubeHelpers.user.getAuthUser(res)
+    const user = await this.peertubeHelpers.user.getAuthUser(res) as MUserDefault | undefined
+
+    if (!user) {
+      res.status(401).json({})
+      return
+    }
+
     const userInfo = await this.storage.getUserInfo(user.id)
 
     if (!userInfo?.customerId) {
@@ -130,7 +137,13 @@ export class SubscriptionRoute {
   }
 
   patch = async (req: express.Request, res: express.Response): Promise<void> => {
-    const user = await this.peertubeHelpers.user.getAuthUser(res)
+    const user = await this.peertubeHelpers.user.getAuthUser(res) as MUserDefault | undefined
+
+    if (!user) {
+      res.status(401).json({})
+      return
+    }
+
     const userInfo = await this.storage.getUserInfo(user.id)
 
     const stripe = await this.getStripe()
