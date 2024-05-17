@@ -65,14 +65,30 @@ export class SubscriptionRoute {
 
     customer = customer as Stripe.Customer
 
-    if (customer.subscriptions?.data.length && customer.subscriptions?.data.length > 1) {
-      this.peertubeHelpers.logger.warn(
-        `Customer ${String(customerId)} has unexpected number of subscriptions:
-         ${String(customer.subscriptions.data.length)}`
+    // Sort to have newest subscription first
+    const subscriptions = customer.subscriptions?.data.sort((a, b) => b.created > a.created ? 1 : -1) ?? []
+
+    if (subscriptions.length && subscriptions.length > 1) {
+      this.peertubeHelpers.logger.info(
+        `Customer ${String(customerId)} has multiple subscriptions:
+         ${String(subscriptions.length)}`
       )
     }
 
-    return customer.subscriptions?.data.pop() as Stripe.Subscription
+    const activeSubscriptions = subscriptions.filter((s) => s.status === 'active') ?? []
+
+    if (activeSubscriptions.length > 0) {
+      if (activeSubscriptions.length > 1) {
+        this.peertubeHelpers.logger.warn(
+          `Customer ${String(customerId)} has multiple active subscriptions:
+           ${String(activeSubscriptions.length)}`
+        )
+      }
+
+      return activeSubscriptions[0]
+    }
+
+    return subscriptions[0]
   }
 
   get = async (req: express.Request, res: express.Response): Promise<void> => {
