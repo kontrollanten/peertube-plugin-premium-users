@@ -1,14 +1,13 @@
-import {
-  HttpStatusCode,
+import type {
   MUserDefault,
-  type PeerTubeHelpers,
-  type PluginSettingsManager,
+  PeerTubeHelpers,
+  PluginSettingsManager
 } from '@peertube/peertube-types'
 import express from 'express'
 import { Storage } from '../storage'
 import { SETTING_STRIPE_API_KEY } from '../../shared/constants'
 import Stripe from 'stripe'
-import { Subscription } from '../types';
+import { Subscription } from '../types'
 
 const convertStripeDateToString = (date: number): string =>
   new Date(date * 1000).toISOString()
@@ -172,7 +171,7 @@ export class SubscriptionRoute {
     const subscription = await this.getStripeSubscription(res, userInfo.customerId)
 
     if (!subscription) {
-      this.peertubeHelpers.logger.info(`No subscription found for user ${user.id as string}`)
+      this.peertubeHelpers.logger.info(`No subscription found for user ${String(user.id)}`)
       return
     }
 
@@ -195,6 +194,6 @@ export class SubscriptionRoute {
       return
     }
 
-    res.status(HttpStatusCode.NO_CONTENT_204).json()
+    res.status(204).json()
   }
 }

@@ -1,4 +1,4 @@
-import { MyUser } from '@peertube/peertube-types/shared/models'
+import { MyUser } from '@peertube/peertube-types'
 import packageJson from '../package.json'
 import { Subscription } from '../server/types'
 import { Price } from '../shared/types'

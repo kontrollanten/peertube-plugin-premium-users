@@ -1,8 +1,8 @@
-import { RegisterClientHelpers, RegisterClientOptions } from '@peertube/peertube-types/client'
-import { RegisterClientRouteOptions } from '@peertube/peertube-types/shared/models'
+import { RegisterClientRouteOptions } from '@peertube/peertube-types'
+import { RegisterClientHelpers, RegisterClientOptions } from '@peertube/peertube-types/client';
 import { UiBuilder } from './ui-builder'
-import { SETTING_ENABLE_PLUGIN } from '../shared/constants';
-import { trackGAAction } from './utils';
+import { SETTING_ENABLE_PLUGIN } from '../shared/constants'
+import { trackGAAction } from './utils'
 
 export async function register ({
   peertubeHelpers,

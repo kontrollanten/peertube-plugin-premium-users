@@ -1,5 +1,5 @@
 import type { RegisterClientOptions } from '@peertube/peertube-types/client'
-import { RegisterClientRouteOptions, RegisterClientVideoFieldOptions } from '@peertube/peertube-types/shared/models'
+import { RegisterClientRouteOptions, RegisterClientVideoFieldOptions } from '@peertube/peertube-types'
 import { VIDEO_FIELD_IS_PREMIUM_CONTENT } from '../shared/constants'
 
 async function register ({

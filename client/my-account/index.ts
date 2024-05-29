@@ -1,8 +1,7 @@
 import type { RegisterClientOptions } from '@peertube/peertube-types/client'
-import { RegisterClientRouteOptions } from '@peertube/peertube-types/shared/models'
+import { RegisterClientRouteOptions } from '@peertube/peertube-types'
 import { SETTING_ENABLE_PLUGIN } from '../../shared/constants'
 import { buildOnMount } from './route'
-
 
 async function register ({
   registerClientRoute,
