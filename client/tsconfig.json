@@ -1,5 +1,5 @@
 {
-	"compilerOptions": {
+  "compilerOptions": {
     "module": "es6",
     "moduleResolution": "node",
     // target:"es2015" is the target for Peertube client code. Using the same.
@@ -21,9 +21,9 @@
     "resolveJsonModule": true,
     "outDir": "../dist/client",
     "paths": {}
-	},
-	"include": [
-		"./**/*"
-	],
-	"exclude": []
+  },
+  "include": [
+    "./**/*"
+  ],
+  "exclude": []
 }
