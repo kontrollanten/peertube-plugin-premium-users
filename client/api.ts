@@ -7,8 +7,8 @@ export class Api {
   getAuthHeader: () => { Authorization: string } | undefined
   pluginBasePath = `/plugins/${packageJson.name.replace('peertube-plugin-', '')}/router`
 
-  constructor (getAuthHeader: () => { Authorization: string } | undefined) {
-    this.getAuthHeader = getAuthHeader
+  constructor (getAuthHeader?: () => { Authorization: string } | undefined) {
+    this.getAuthHeader = getAuthHeader ? getAuthHeader : () => undefined
   }
 
   private async get<P>(path: string): Promise<P> {

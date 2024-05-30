@@ -53,9 +53,16 @@ export class UiBuilder {
     return elem
   }
 
+  h3 (innerText: string): HTMLElement {
+    const elem = document.createElement('h2')
+    elem.innerText = innerText
+
+    return elem
+  }
+
   p (innerText: string, className?: string): HTMLElement {
     const elem = document.createElement('p')
-    elem.innerText = innerText
+    elem.innerHTML = innerText
 
     if (className) {
       elem.className = className
@@ -72,8 +79,12 @@ export class UiBuilder {
     return elem
   }
 
-  ul (children: string[]): HTMLElement {
+  ul (children: string[], className?: string): HTMLElement {
     const ul = document.createElement('ul')
+
+    if (className) {
+      ul.className = className
+    }
 
     children.forEach((child) => {
       const li = document.createElement('li')

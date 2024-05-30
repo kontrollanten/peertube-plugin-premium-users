@@ -2,7 +2,7 @@ import { RegisterClientHelpers } from '@peertube/peertube-types/client'
 import { Subscription, SubscriptionInvoice } from '../../server/types'
 import { SETTING_STRIPE_CUSTOMER_PORTAL_URL } from '../../shared/constants'
 import { Api } from '../api'
-import { UiBuilder } from '../ui-builder'
+import { UiBuilder } from '../ui/ui-builder'
 
 const formatDate = (date: string | number): string => {
   const d = new Date(date)

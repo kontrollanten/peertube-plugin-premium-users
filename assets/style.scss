@@ -16,16 +16,16 @@
     font-size: 18px;
   }
 
+  .original-price {
+    text-decoration-line: line-through;
+    opacity: 0.7;
+    text-decoration-style: solid;
+    text-decoration-thickness: 1px;
+  }
+
   &.my-account {
     .grey-button.peertube-button-link {
       margin-right: 10px;
-    }
-
-    .original-price {
-      text-decoration-line: line-through;
-      opacity: 0.7;
-      text-decoration-style: solid;
-      text-decoration-thickness: 1px;
     }
   }
 
@@ -37,9 +37,13 @@
       margin-bottom: 5rem;
     }
 
+    .prices-alternatives,
     .action-buttons {
-      margin-top: 5rem;
-      max-width: 300px;
+      max-width: 500px;
+    }
+
+    .row {
+      padding-bottom: 0;
     }
   }
 }

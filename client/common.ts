@@ -1,8 +1,10 @@
 import { RegisterClientRouteOptions } from '@peertube/peertube-types'
 import { RegisterClientHelpers, RegisterClientOptions } from '@peertube/peertube-types/client';
-import { UiBuilder } from './ui-builder'
+import { UiBuilder } from './ui/ui-builder'
 import { SETTING_ENABLE_PLUGIN } from '../shared/constants'
 import { trackGAAction } from './utils'
+import { getFormattedPaymentAlternatives } from './ui/utils';
+import { Api } from './api';
 
 export async function register ({
   peertubeHelpers,
@@ -114,7 +116,7 @@ export async function register ({
 
   registerClientRoute({
     route: '/premium',
-    title: await peertubeHelpers.translate('Premium account'),
+    title: await peertubeHelpers.translate('Become premium'),
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     onMount: async ({ rootEl }) => {
       if (peertubeHelpers.isLoggedIn()) {
@@ -123,8 +125,11 @@ export async function register ({
       }
 
       trackGAAction('tutorial_begin')
+      const restApi = new Api()
 
+      const prices = await restApi.getPrices()
       const uiBuilder = new UiBuilder(rootEl)
+      const pricingColumns = await Promise.all(prices.map((price) => getFormattedPaymentAlternatives({ price, uiBuilder, translate: peertubeHelpers.translate })))
 
       const wrapper = uiBuilder.div(
         [
@@ -133,6 +138,10 @@ export async function register ({
           uiBuilder.p(await peertubeHelpers.translate(
             'Get access to premium videos and helps us to continue or work.'
           )),
+          uiBuilder.div(
+            pricingColumns.map((c) => uiBuilder.div([c], 'col-12 col-sm-6')),
+            'prices-alternatives row my-5 mx-auto'
+          ),
           uiBuilder.div([
             uiBuilder.a(await peertubeHelpers.translate('Create an account'), {
               class: 'orange-button peertube-button-link button-md mb-2',
@@ -145,7 +154,7 @@ export async function register ({
             })
           ], 'action-buttons d-flex justify-content-center flex-column mb-4 mx-sm-auto')
         ],
-        'plugin-premium-users become-premium margin-content pt-4 text-center'
+        'plugin-premium-users become-premium margin-content pt-4 text-center mx-auto px-4 px-md-0'
       )
 
       rootEl.appendChild(wrapper)
