@@ -73,7 +73,7 @@
     "@types/gtag.js": "^0.0.19",
     "@types/sequelize": "^4.28.20",
     "express": "^4.19.2",
-    "short-uuid": "^4.2.2",
-    "stripe": "^14.22.0"
+    "short-uuid": "^5.2.0",
+    "stripe": "^15.8.0"
   }
 }
