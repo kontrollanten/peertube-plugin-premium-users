@@ -129,7 +129,11 @@ export async function register ({
 
       const prices = await restApi.getPrices()
       const uiBuilder = new UiBuilder(rootEl)
-      const pricingColumns = await Promise.all(prices.map((price) => getFormattedPaymentAlternatives({ price, uiBuilder, translate: peertubeHelpers.translate })))
+      const pricingColumns = await Promise.all(
+        prices.map((price) =>
+          getFormattedPaymentAlternatives({ price, uiBuilder, translate: peertubeHelpers.translate })
+        )
+      )
 
       const wrapper = uiBuilder.div(
         [

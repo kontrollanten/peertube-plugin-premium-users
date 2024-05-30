@@ -78,37 +78,37 @@ export const getFormattedPaymentAlternatives = async (
     uiBuilder: UiBuilder,
     translate: (str: string) => Promise<string>
   }): Promise<HTMLElement> => {
-    const discountedPrice = getDiscountedPrice(price)
-    const discountForHowLongDesc = await getDiscountLengthDesc(price, translate)
-    const amountToSave = getAmountToSave(price)
-    const discount = getDiscount(price)
-    const formattedPrice = await getFormattedPrice(price, translate)
-    const hasButton = !!buttonOnClick
+  const discountedPrice = getDiscountedPrice(price)
+  const discountForHowLongDesc = await getDiscountLengthDesc(price, translate)
+  const amountToSave = getAmountToSave(price)
+  const discount = getDiscount(price)
+  const formattedPrice = await getFormattedPrice(price, translate)
+  const hasButton = !!buttonOnClick
 
-    const button = uiBuilder.a(formattedPrice, {
-      class: 'orange-button peertube-button-link mb-4'
-    })
+  const button = uiBuilder.a(formattedPrice, {
+    class: 'orange-button peertube-button-link mb-4'
+  })
 
-    if (hasButton) {
-      button.addEventListener('click', buttonOnClick)
-    }
+  if (hasButton) {
+    button.addEventListener('click', buttonOnClick)
+  }
 
-    return uiBuilder.div([
-      uiBuilder.p(
-        await translate('Pay ' +
+  return uiBuilder.div([
+    uiBuilder.p(
+      await translate('Pay ' +
         (price.recurring?.interval === 'day' ? 'daily' : price.recurring?.interval as string + 'ly')
-        ),
-        'fw-bold'
       ),
-      ...(discountedPrice === null
-        ? []
-        : [uiBuilder.ul([
-            discount + ' ' + discountForHowLongDesc,
-            (await translate('You\'ll save AMOUNT_TO_SAVE.'))
-              .replace('AMOUNT_TO_SAVE', String(formatAmount(Math.round(amountToSave), price.currency)))
-          ], 'text-start')]),
-      ...(hasButton ? [button] : [
-        uiBuilder.p(formattedPrice)
-      ])
+      'fw-bold'
+    ),
+    ...(discountedPrice === null
+      ? []
+      : [uiBuilder.ul([
+        discount + ' ' + discountForHowLongDesc,
+        (await translate('You\'ll save AMOUNT_TO_SAVE.'))
+          .replace('AMOUNT_TO_SAVE', String(formatAmount(Math.round(amountToSave), price.currency)))
+      ], 'text-start')]),
+    ...(hasButton ? [button] : [
+      uiBuilder.p(formattedPrice)
     ])
+  ])
 }

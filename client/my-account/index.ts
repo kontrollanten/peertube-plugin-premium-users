@@ -23,8 +23,8 @@ async function register ({
     parentRoute: '/my-account',
     menuItem: settings[SETTING_ENABLE_PLUGIN]
       ? {
-          label: await translate('Premium account')
-        }
+        label: await translate('Premium account')
+      }
       : undefined,
     title: await translate('Premium account'),
     // eslint-disable-next-line @typescript-eslint/no-misused-promises

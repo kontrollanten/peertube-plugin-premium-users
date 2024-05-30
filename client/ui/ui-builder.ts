@@ -14,9 +14,9 @@ export class UiBuilder {
         ),
         ...(secondCol
           ? [this.div(
-              secondCol,
-              'col-12 col-lg-8 col-xl-9'
-            )]
+            secondCol,
+            'col-12 col-lg-8 col-xl-9'
+          )]
           : [])
       ],
       'row'

@@ -103,15 +103,15 @@ export class CheckoutRoute {
         cancel_url: `${baseUrl}/my-account/p/premium?checkout_status=canceled`,
         ...((!couponId || allowPromotionCodes)
           ? {
-              allow_promotion_codes: true
-            }
+            allow_promotion_codes: true
+          }
           : {
-              discounts: [
-                {
-                  coupon: couponId
-                }
-              ]
-            })
+            discounts: [
+              {
+                coupon: couponId
+              }
+            ]
+          })
       })
 
       res.json({
