@@ -8,10 +8,10 @@ const getDiscount = (price: Price): string => price.coupon?.percent_off
 
 const getDiscountLengthDesc = async (price: Price, translate: any): Promise<string> => {
   if (price.recurring?.interval === 'month') {
-    return (await translate('the first MONTHS_COUNT months.'))
+    return (await translate('discount the first MONTHS_COUNT months.'))
       .replace('MONTHS_COUNT', String(price.coupon?.duration_in_months))
   } else if (price.recurring?.interval === 'year') {
-    return translate('for a whole year.')
+    return translate('discount for a whole year.')
   }
 
   return ''
