@@ -9,7 +9,6 @@ import {
   MUser,
   type serverHookObject
 } from '@peertube/peertube-types'
-
 import Stripe from 'stripe'
 import express from 'express'
 import shortUUID from 'short-uuid'
@@ -57,8 +56,8 @@ async function register ({
 
   await storage.init()
 
-  let replacementVideoWithFiles: MVideoWithAllFiles
   let isPluginEnabled: boolean = await settingsManager.getSetting(SETTING_ENABLE_PLUGIN) as boolean
+  let replacementVideoUuid: string
 
   registerSetting({
     name: SETTING_STRIPE_API_KEY,
@@ -130,7 +129,7 @@ async function register ({
       return
     }
 
-    replacementVideoWithFiles = await peertubeHelpers.videos.loadByIdOrUUIDWithFiles(replacementVideo.id)
+    replacementVideoUuid = replacementVideo.uuid
   }
 
   const registerStripeProductIdSetting = async (apiKey: string): Promise<void> => {
@@ -226,15 +225,17 @@ async function register ({
         return video
       }
 
-      if (!replacementVideoWithFiles) {
-        logger.debug('No replacement video found, returning original video.')
-        return video
-      }
-
       const isPremiumVideo = await storage.isPremiumVideo(video.uuid)
 
       if (!isPremiumVideo) {
         logger.debug('Not a premium video, returning original video.')
+        return video
+      }
+
+      const replacementVideoWithFiles = await peertubeHelpers.videos.loadByIdOrUUIDWithFiles(replacementVideoUuid)
+
+      if (!replacementVideoWithFiles?.getHLSPlaylist()) {
+        logger.debug('No replacement video found, returning original video.')
         return video
       }
 
@@ -248,15 +249,19 @@ async function register ({
 
       logger.debug('Non premium user, returning the replacement video: ' + replacementVideoWithFiles.uuid)
 
-      video.VideoStreamingPlaylists = video.VideoStreamingPlaylists.map((p) => {
-        p.getMasterPlaylistUrl = () =>
-          replacementVideoWithFiles.getHLSPlaylist().getMasterPlaylistUrl(replacementVideoWithFiles)
+      try {
+        video.VideoStreamingPlaylists = video.VideoStreamingPlaylists.map((p) => {
+          p.getMasterPlaylistUrl = () =>
+            replacementVideoWithFiles.getHLSPlaylist().getMasterPlaylistUrl(replacementVideoWithFiles)
 
-        p.getSha256SegmentsUrl = () =>
-          replacementVideoWithFiles.getHLSPlaylist().getSha256SegmentsUrl(replacementVideoWithFiles)
+          p.getSha256SegmentsUrl = () =>
+            replacementVideoWithFiles.getHLSPlaylist().getSha256SegmentsUrl(replacementVideoWithFiles)
 
-        return p
-      })
+          return p
+        })
+      } catch (err) {
+        logger.error('Failed to replace premium video, will return original video.', { err })
+      }
 
       logger.debug('Non premium user, returning the following video: ', { playlist: video.getHLSPlaylist() })
 
