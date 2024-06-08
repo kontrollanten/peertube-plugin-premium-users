@@ -143,7 +143,7 @@ export async function register ({
             'Get access to premium videos and helps us to continue or work.'
           )),
           uiBuilder.div(
-            pricingColumns.map((c) => uiBuilder.div([c], 'col-12 col-sm-6')),
+            pricingColumns.map((c) => uiBuilder.div([c], 'col-12 col-sm-6 d-flex')),
             'prices-alternatives row my-5 mx-auto'
           ),
           uiBuilder.div([

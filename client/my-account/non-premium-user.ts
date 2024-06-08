@@ -94,7 +94,7 @@ export const renderNonPremiumPage = async ({
     uiBuilder.renderRow(
       [],
       [uiBuilder.div(
-        columns.map((c) => uiBuilder.div([c], 'col-12 col-sm-6')), 'row'
+        columns.map((c) => uiBuilder.div([c], 'col-12 col-sm-6 d-flex')), 'row'
       )]
     )
   )

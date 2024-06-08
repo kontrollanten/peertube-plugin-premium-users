@@ -108,7 +108,7 @@ export const getFormattedPaymentAlternatives = async (
           .replace('AMOUNT_TO_SAVE', String(formatAmount(Math.round(amountToSave), price.currency)))
       ], 'text-start')]),
     ...(hasButton ? [button] : [
-      uiBuilder.p(formattedPrice)
+      uiBuilder.p(formattedPrice, 'mt-auto')
     ])
-  ])
+  ], 'd-flex flex-grow-1 flex-column')
 }
