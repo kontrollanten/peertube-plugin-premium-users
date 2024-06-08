@@ -1,0 +1,5 @@
+docker-volume
+peertube-plugin-premium-users
+.peertube_access_token
+.stripe_api_key
+*.tgz

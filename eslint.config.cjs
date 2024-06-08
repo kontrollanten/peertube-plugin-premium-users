@@ -15,6 +15,7 @@ module.exports = [
         "parserOptions": {
             "ecmaVersion": 2018,
             "project": [
+                "./tests/tsconfig.json",
                 "./server/tsconfig.json",
                 "./client/tsconfig.json"
             ]
@@ -42,5 +43,10 @@ module.exports = [
         "no-unused-vars": "off",
         "indent": [2, 2]
     }
+  },
+  {
+    "ignores": [
+      "tests/docker-volume/*"
+    ]
   }
 ]

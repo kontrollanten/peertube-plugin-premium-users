@@ -1,0 +1,63 @@
+version: "3.3"
+
+services:
+  peertube:
+    # If you don't want to use the official image and build one from sources:
+    # build:
+    #   context: .
+    #   dockerfile: ./support/docker/production/Dockerfile.bookworm
+    #image: chocobozzz/peertube:production-bookworm
+    image: peertube-custom
+    # Use a static IP for this container because nginx does not handle proxy host change without reload
+    # This container could be restarted on crash or until the postgresql database is ready for connection
+    networks:
+      default:
+        ipv4_address: 172.18.0.42
+    env_file:
+      - .env
+    ports:
+     - "1935:1935" # Comment if you don't want to use the live feature
+     - "9000:9000" # Uncomment if you use another webserver/proxy or test PeerTube in local, otherwise not suitable for production
+    volumes:
+      - ./docker-volume/data:/data
+      - ./docker-volume/config:/config
+      - ./peertube-plugin-premium-users:/peertube-plugin-premium-users
+    depends_on:
+      - postgres
+      - redis
+      - postfix
+    restart: "always"
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:9000"]
+        interval: 5s
+        timeout: 10s
+        retries: 5
+
+  postgres:
+    image: postgres:13-alpine
+    env_file:
+      - .env
+    # volumes:
+    #   - ./docker-volume/db:/var/lib/postgresql/data
+    restart: "always"
+
+  redis:
+    image: redis:6-alpine
+    volumes:
+      - ./docker-volume/redis:/data
+    restart: "always"
+
+  postfix:
+    image: mwader/postfix-relay
+    env_file:
+      - .env
+    volumes:
+      - ./docker-volume/opendkim/keys:/etc/opendkim/keys
+    restart: "always"
+
+networks:
+  default:
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.18.0.0/16

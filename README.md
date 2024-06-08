@@ -19,3 +19,8 @@ To become a premium user a user has to go to My account > Premium and click "Sub
 * Verify paymentStatus is accurate upon GET /subscriptions
 * ~Change storage to Postgres~
 * ~Add Google Analytics support.~
+
+## Demo / testing
+* `cd tests`
+* `./setup-test-env.sh`
+* `open http://localhost:9000`
