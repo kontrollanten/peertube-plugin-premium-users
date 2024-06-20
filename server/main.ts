@@ -22,6 +22,7 @@ import {
   SETTING_STRIPE_CUSTOMER_PORTAL_URL,
   SETTING_STRIPE_PRODUCT_ID,
   SETTING_STRIPE_WEBHOOK_SECRET,
+  SETTING_WHITELIST_USER_AGENT,
   VIDEO_FIELD_IS_PREMIUM_CONTENT
 } from '../shared/constants'
 import { Storage } from './storage'
@@ -57,6 +58,7 @@ async function register ({
   await storage.init()
 
   let isPluginEnabled: boolean = await settingsManager.getSetting(SETTING_ENABLE_PLUGIN) as boolean
+  let whitelistRegex: string = (await settingsManager.getSetting(SETTING_WHITELIST_USER_AGENT) as string)?.trim()
   let replacementVideoUuid: string
 
   registerSetting({
@@ -104,6 +106,17 @@ async function register ({
     default: false,
     descriptionHTML: `
       Whether the plugin is enabled for users.
+      `
+  })
+
+  registerSetting({
+    name: SETTING_WHITELIST_USER_AGENT,
+    label: 'Whitelist specific user agents',
+    type: 'input',
+    private: true,
+    default: '',
+    descriptionHTML: `
+      Regex to match User-Agent headers which should be whitelisted, i.e. be able to see premium content without login.
       `
   })
 
@@ -188,6 +201,7 @@ async function register ({
 
   const parseSettings = async (settings: SettingEntries): Promise<void> => {
     isPluginEnabled = settings[SETTING_ENABLE_PLUGIN] as boolean
+    whitelistRegex = (settings[SETTING_WHITELIST_USER_AGENT] as string)?.trim()
     await Promise.all([
       loadReplacementVideo(settings[SETTING_REPLACEMENT_VIDEO] as string),
       registerStripeProductIdSetting(settings[SETTING_STRIPE_API_KEY] as string),
@@ -199,7 +213,8 @@ async function register ({
   await parseSettings(await settingsManager.getSettings([
     SETTING_REPLACEMENT_VIDEO,
     SETTING_STRIPE_API_KEY,
-    SETTING_ENABLE_PLUGIN
+    SETTING_ENABLE_PLUGIN,
+    SETTING_WHITELIST_USER_AGENT
   ]))
 
   registerHook({
@@ -218,10 +233,15 @@ async function register ({
     target: 'filter:api.video.get.result',
     handler: async (
       video: MVideoFormattableDetails & { getMasterPlaylistUrl: () => string },
-      { userId }: { videoId: number | string, userId: number }
+      { req, userId }: { req: express.Request, videoId: number | string, userId: number }
     ): Promise<MVideo> => {
       if (!isPluginEnabled) {
         logger.debug('Plugin is disabled, returning original video.')
+        return video
+      }
+
+      // req is only available when https://github.com/Chocobozzz/PeerTube/pull/6449 is implemented
+      if (whitelistRegex && req?.header('user-agent')?.match(whitelistRegex) !== null) {
         return video
       }
 
