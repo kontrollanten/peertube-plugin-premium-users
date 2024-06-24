@@ -232,7 +232,7 @@ async function register ({
   registerHook({
     target: 'filter:api.video.get.result',
     handler: async (
-      video: MVideoFormattableDetails & { getMasterPlaylistUrl: () => string },
+      video: MVideoFormattableDetails & { getMasterPlaylistUrl: () => string, pluginData: any },
       { req, userId }: { req: express.Request, videoId: number | string, userId: number }
     ): Promise<MVideo> => {
       if (!isPluginEnabled) {
@@ -240,12 +240,19 @@ async function register ({
         return video
       }
 
+      const isPremiumVideo = await storage.isPremiumVideo(video.uuid)
+
+      if (isPremiumVideo) {
+        video.pluginData = {
+          ...(video.pluginData || {}),
+          [VIDEO_FIELD_IS_PREMIUM_CONTENT]: 'true'
+        }
+      }
+
       // req is only available when https://github.com/Chocobozzz/PeerTube/pull/6449 is implemented
       if (whitelistRegex && req?.header('user-agent')?.match(whitelistRegex) !== null) {
         return video
       }
-
-      const isPremiumVideo = await storage.isPremiumVideo(video.uuid)
 
       if (!isPremiumVideo) {
         logger.debug('Not a premium video, returning original video.')
