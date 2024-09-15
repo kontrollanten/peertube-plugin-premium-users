@@ -46,7 +46,8 @@
     "check:client:tsc": "npx tsc --p client/tsconfig.json --noEmit",
     "lint:script": "npx eslint .",
     "lint:styles": "stylelint 'assets/**/*.scss'",
-    "test": "npm-run-all -p lint:script lint:styles"
+    "test": "npm-run-all -p lint:script lint:styles test:unit",
+    "test:unit": "mocha --require ts-node/register server/*.spec.ts"
   },
   "staticDirs": {
     "images": "public/images"
@@ -56,16 +57,19 @@
   },
   "devDependencies": {
     "@tsconfig/node16": "^16.0.0",
+    "@types/mocha": "^10.0.8",
     "@typescript-eslint/eslint-plugin": "^7.11.0",
     "@typescript-eslint/parser": "^7.11.0",
     "esbuild": "^0.21.4",
     "eslint": "^8.21.0",
     "eslint-config-love": "^51.0.1",
     "globals": "^15.3.0",
+    "mocha": "^10.7.3",
     "npm-run-all": "^4.1.5",
     "stylelint": "^16.6.1",
     "stylelint-config-recommended-scss": "^14.0.0",
     "stylelint-config-standard-scss": "^13.1.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.4.3"
   },
   "dependencies": {
