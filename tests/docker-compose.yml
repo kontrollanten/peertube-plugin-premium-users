@@ -1,13 +1,11 @@
-version: "3.3"
-
 services:
   peertube:
     # If you don't want to use the official image and build one from sources:
     # build:
     #   context: .
     #   dockerfile: ./support/docker/production/Dockerfile.bookworm
-    #image: chocobozzz/peertube:production-bookworm
-    image: peertube-custom
+    image: chocobozzz/peertube:production-bookworm
+    # image: peertube-custom
     # Use a static IP for this container because nginx does not handle proxy host change without reload
     # This container could be restarted on crash or until the postgresql database is ready for connection
     networks:

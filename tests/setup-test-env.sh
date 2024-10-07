@@ -14,6 +14,18 @@ __cleanup ()
 trap __cleanup INT
 trap __cleanup EXIT
 
+if ! command -v stripe 2>&1 >/dev/null
+then
+    echo "Stripe CLI could not be found, please install it before going further."
+    exit 1
+fi
+
+if [ ! -f .stripe_api_key ]; then
+    read -p "Enter your Stripe test environment secret API key: "
+
+    echo "$REPLY" > .stripe_api_key
+fi
+
 npm i
 cd ..
 echo "Packing plugin..."
@@ -29,5 +41,5 @@ PEERTUBE_PWD=rootroot
 sudo docker compose exec peertube peertube-cli auth add -u "http://localhost:9000" -U "root" --password "$PEERTUBE_PWD"
 sudo docker compose exec peertube peertube-cli plugins install --path /peertube-plugin-premium-users
 sudo docker compose exec peertube peertube-cli get-access-token --url http://localhost:9000 --username root --password $PEERTUBE_PWD > .peertube_access_token
-source $HOME/.nvm/nvm.sh; nvm use
+source $HOME/.nvm/nvm.sh; nvm install
 npx ts-node prepare-plugin
