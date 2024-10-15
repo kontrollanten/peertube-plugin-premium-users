@@ -3,7 +3,7 @@ const eslintParser = require('@typescript-eslint/parser')
 
 module.exports = [
   {
-    ...require('eslint-config-love'),
+    ...import('eslint-config-love'),
     "files": [
       "**/*.ts"
     ],
