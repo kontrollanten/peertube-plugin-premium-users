@@ -78,6 +78,6 @@
     "@types/sequelize": "^4.28.20",
     "express": "^4.19.2",
     "short-uuid": "^5.2.0",
-    "stripe": "^15.8.0"
+    "stripe": "^17.2.0"
   }
 }
