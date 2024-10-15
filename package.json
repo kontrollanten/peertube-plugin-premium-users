@@ -74,7 +74,7 @@
   },
   "dependencies": {
     "@peertube/peertube-types": "^6.3.0",
-    "@types/gtag.js": "^0.0.19",
+    "@types/gtag.js": "^0.0.20",
     "@types/sequelize": "^4.28.20",
     "express": "^4.19.2",
     "short-uuid": "^5.2.0",
