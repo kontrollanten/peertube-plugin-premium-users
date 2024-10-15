@@ -36,6 +36,11 @@ interface RegisterServerHookOptions {
   handler: Function
 }
 
+type AllowedResult = {
+  allowed: boolean
+  errorMessage?: string
+}
+
 const uuidTranslator = shortUUID()
 
 async function register ({
@@ -230,15 +235,81 @@ async function register ({
   })
 
   registerHook({
+    target: 'filter:api.download.video.allowed.result',
+    handler: async (
+      result: AllowedResult,
+      { video }:
+      {
+        video: MVideoFullLight
+      }
+    ): Promise<AllowedResult> => {
+      if (!result.allowed) return result
+
+      if (await checkIfUserIsAllowedVideoAccess(video.uuid)) {
+        return result
+      }
+
+      return { allowed: false, errorMessage: `You're not a premium user.` }
+    }
+  })
+
+  registerHook({
+    target: 'filter:api.download.generated-video.allowed.result',
+    handler: async (
+      result: AllowedResult,
+      { video }:
+      {
+        video: MVideoFullLight
+      }
+    ): Promise<AllowedResult> => {
+      if (!result.allowed) return result
+
+      if (await checkIfUserIsAllowedVideoAccess(video.uuid)) {
+        return result
+      }
+
+      return { allowed: false, errorMessage: `You're not a premium user.` }
+    }
+  })
+
+  const checkIfUserIsAllowedVideoAccess =
+    async (videoUuid: string, userId?: number, userAgent?: string): Promise<boolean> => {
+      if (!isPluginEnabled) {
+        logger.debug('Plugin is disabled, returning original video.')
+        return true
+      }
+
+      const isPremiumVideo = await storage.isPremiumVideo(videoUuid)
+
+      if (!isPremiumVideo) {
+        logger.debug('Not a premium video, returning original video.')
+        return true
+      }
+
+      logger.debug('Its a premium video')
+
+      // req is only available when https://github.com/Chocobozzz/PeerTube/pull/6449 is implemented
+      if (whitelistRegex && userAgent?.match(whitelistRegex) !== null) {
+        logger.debug('User agent header is whitelisted, returning original video.')
+        return true
+      }
+
+      const userInfo = await storage.getUserInfo(userId)
+
+      if (isPremiumUser(userInfo)) {
+        logger.debug('Premium user, returning the original video.')
+        return true
+      }
+
+      return false
+    }
+
+  registerHook({
     target: 'filter:api.video.get.result',
     handler: async (
       video: MVideoFormattableDetails & { getMasterPlaylistUrl: () => string, pluginData: any },
       { req, userId }: { req: express.Request, videoId: number | string, userId: number }
     ): Promise<MVideo> => {
-      if (!isPluginEnabled) {
-        logger.debug('Plugin is disabled, returning original video.')
-        return video
-      }
 
       const isPremiumVideo = await storage.isPremiumVideo(video.uuid)
 
@@ -247,30 +318,28 @@ async function register ({
           ...(video.pluginData || {}),
           [VIDEO_FIELD_IS_PREMIUM_CONTENT]: 'true'
         }
+        video.downloadEnabled = false
+        video.VideoStreamingPlaylists = video.VideoStreamingPlaylists.map((p) => {
+          p.VideoFiles = p.VideoFiles.map(f => {
+            f.torrentFilename = ''
+            f.torrentUrl = ''
+
+            return f
+          })
+
+          return p
+        })
       }
 
-      // req is only available when https://github.com/Chocobozzz/PeerTube/pull/6449 is implemented
-      if (whitelistRegex && req?.header('user-agent')?.match(whitelistRegex) !== null) {
+      if (await checkIfUserIsAllowedVideoAccess(video.uuid, userId, req?.header('user-agent'))) {
         return video
       }
 
-      if (!isPremiumVideo) {
-        logger.debug('Not a premium video, returning original video.')
-        return video
-      }
 
       const replacementVideoWithFiles = await peertubeHelpers.videos.loadByIdOrUUIDWithFiles(replacementVideoUuid)
 
       if (!replacementVideoWithFiles?.getHLSPlaylist()) {
         logger.debug('No replacement video found, returning original video.')
-        return video
-      }
-
-      logger.debug('Its a premium video, checking if user is a premium user.')
-      const userInfo = await storage.getUserInfo(userId)
-
-      if (isPremiumUser(userInfo)) {
-        logger.debug('Premium user, returning the original video')
         return video
       }
 

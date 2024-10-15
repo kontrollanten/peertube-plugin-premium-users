@@ -54,7 +54,7 @@ export class Storage {
     return Boolean(result)
   }
 
-  getUserInfo = async (userId: number): Promise<PluginUserInfo | undefined> => {
+  getUserInfo = async (userId?: number): Promise<PluginUserInfo | undefined> => {
     if (!userId) return
 
     const [userInfo] = await this.sequelLight.query(`SELECT * FROM ${this.tables.premiumUsers} WHERE "userId" = ?`, {
