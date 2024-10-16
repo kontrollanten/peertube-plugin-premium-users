@@ -3,3 +3,8 @@ peertube-plugin-premium-users
 .peertube_access_token
 .stripe_api_key
 *.tgz
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

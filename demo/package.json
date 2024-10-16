@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "main": "prepare-plugin.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^22.7.5",
     "ts-node": "^10.9.2"
   }
 }

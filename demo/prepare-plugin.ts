@@ -33,15 +33,15 @@ const startStripeListen = () => new Promise<string>((resolve, reject) => {
   const ls = spawn('stripe', [
     'listen',
     '--forward-to',
-    'localhost:9090/plugins/premium-users/router/stripe-webhook',
+    'localhost:9000/plugins/premium-users/router/stripe-webhook',
     '--api-key',
     stripeApiKey
   ]);
-  
+
   ls.stdout.on('data', (data) => {
     console.log(`stdout: ${data}`);
   });
-  
+
   ls.stderr.on('data', (data: Buffer) => {
     const strData = data.toString()
     if (strData.indexOf('Ready!') > -1) {
@@ -55,11 +55,11 @@ const startStripeListen = () => new Promise<string>((resolve, reject) => {
     }
     console.error(`stderr: ${data}`);
   });
-  
+
   ls.on('close', (code) => {
     console.log(`child process exited with code ${code}`);
   });
-  
+
   setTimeout(() => reject(new Error(`stripe listen command timed out.`)), 10000)
 })
 
@@ -116,7 +116,7 @@ const createStripeCoupon = async () => {
   createdStripeResources.coupons.push(coupon.id)
 }
 
-const setup = async () => { 
+const setup = async () => {
   ptAccessToken = (await readFile('./.peertube_access_token')).toString().trim()
   stripeApiKey = (await readFile('./.stripe_api_key')).toString().trim()
   stripe = new Stripe(stripeApiKey)
@@ -174,7 +174,7 @@ const configurePlugin = async (webhookSecret: string, replacementVideo: Video): 
     [SETTING_STRIPE_PRODUCT_ID]: createdStripeResources.products[0],
     [SETTING_REPLACEMENT_VIDEO]: PEERTUBE_URL + '/w/' + replacementVideo.shortUUID
   }
-  
+
   await ptFetch('/plugins/peertube-plugin-premium-users/settings', {
     headers: {
       'Content-Type': 'application/json'
@@ -194,7 +194,7 @@ const configurePlugin = async (webhookSecret: string, replacementVideo: Video): 
       ...acc,
       [val.name]: val.options
     }), {}) as { [key: string]: { value: string }[] }
-  
+
   await ptFetch('/plugins/peertube-plugin-premium-users/settings', {
     headers: {
       'Content-Type': 'application/json'
@@ -215,16 +215,16 @@ const run = async () => {
   createdVideos.push(replacementVideo.shortUUID)
   const premiumVideo = await uploadVideo('Premium video', './fixtures/premium-video.mp4', 1)
   createdVideos.push(premiumVideo.shortUUID)
-  
+
   const webhookSecret = await startStripeListen()
-  
+
   await createStripeProduct()
   await createStripeCoupon()
 
   await configurePlugin(webhookSecret, replacementVideo)
-  
+
   console.info('Waiting for transcoding...')
-  
+
 
   let videosTranscoded = false
 
@@ -242,7 +242,7 @@ const run = async () => {
       })
     }
   }
-  
+
   const video = await ptFetch('/videos/' + premiumVideo.shortUUID) as any
   const formData = new FormData()
 

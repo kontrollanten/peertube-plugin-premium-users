@@ -1,0 +1,16 @@
+rates_limit:
+  api:
+    window: 10 seconds
+    max: 1500
+  login:
+    window: 5 minutes
+    max: 1500
+  signup:
+    window: 5 minutes
+    max: 200
+
+signup:
+  enabled: true
+  limit: -1
+  requires_approval: false
+  requires_email_verification: false

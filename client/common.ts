@@ -149,7 +149,8 @@ export async function register ({
           uiBuilder.div([
             uiBuilder.a(await peertubeHelpers.translate('Create an account'), {
               class: 'orange-button peertube-button-link button-md mb-2',
-              href: '/signup?redirect=/my-account/p/premium'
+              href: '/signup?redirect=/my-account/p/premium',
+              'data-testid': 'premium_users-button-create_account'
             }),
             uiBuilder.p(await peertubeHelpers.translate('or'), 'mb-0'),
             uiBuilder.a(await peertubeHelpers.translate('Login'), {

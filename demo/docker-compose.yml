@@ -18,7 +18,7 @@ services:
      - "9000:9000" # Uncomment if you use another webserver/proxy or test PeerTube in local, otherwise not suitable for production
     volumes:
       - ./docker-volume/data:/data
-      - ./docker-volume/config:/config
+      - ./peertube-config.yaml:/config/production.yaml
       - ./peertube-plugin-premium-users:/peertube-plugin-premium-users
     depends_on:
       - postgres

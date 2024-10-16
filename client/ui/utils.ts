@@ -53,7 +53,7 @@ const getFormattedPrice = async (price: Price, translate: (str: string) => Promi
   if (discountedPrice !== null) {
     label = `
         <span class="original-price">
-        ${formatAmount(price.unit_amount as number / 100, price.currency)}</span> 
+        ${formatAmount(price.unit_amount as number / 100, price.currency)}</span>
         ${formatAmount(discountedPrice, price.currency)}`
   } else {
     label = formatAmount(price.unit_amount as number / 100, price.currency)
@@ -72,7 +72,7 @@ export const getFormattedPaymentAlternatives = async (
     price,
     uiBuilder,
     translate
-  }: {  
+  }: {
     buttonOnClick?: (event: MouseEvent) => void,
     price: Price,
     uiBuilder: UiBuilder,
@@ -86,7 +86,8 @@ export const getFormattedPaymentAlternatives = async (
   const hasButton = !!buttonOnClick
 
   const button = uiBuilder.a(formattedPrice, {
-    class: 'orange-button peertube-button-link mb-4'
+    class: 'orange-button peertube-button-link mb-4',
+    'data-testid': `premium_users-button-pay_` + price.recurring?.interval
   })
 
   if (hasButton) {

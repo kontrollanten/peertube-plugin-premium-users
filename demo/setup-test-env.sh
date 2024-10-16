@@ -29,8 +29,8 @@ fi
 npm i
 cd ..
 echo "Packing plugin..."
-npm pack --pack-destination tests
-cd tests
+npm pack --pack-destination demo
+cd demo
 rm -rf peertube-plugin-premium-users
 mkdir peertube-plugin-premium-users
 tar xvf peertube-plugin-premium-users-*.tgz -C peertube-plugin-premium-users --strip-components=1
