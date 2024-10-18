@@ -1,4 +1,23 @@
 services:
+  plugin-prep:
+    build:
+      context: ../
+      dockerfile: ./demo/Dockerfile
+    depends_on:
+      peertube:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+    network_mode: "host"
+    volumes:
+        - peertube-plugin-premium-users:/peertube-plugin-premium-users
+    healthcheck:
+        test: ["CMD", "grep", "PREP_READY", "/app.log"]
+        interval: 1s
+        timeout: 1s
+        retries: 1200
   peertube:
     # If you don't want to use the official image and build one from sources:
     # build:
@@ -19,7 +38,7 @@ services:
     volumes:
       - ./docker-volume/data:/data
       - ./peertube-config.yaml:/config/production.yaml
-      - ./peertube-plugin-premium-users:/peertube-plugin-premium-users
+      - peertube-plugin-premium-users:/peertube-plugin-premium-users
     depends_on:
       - postgres
       - redis
@@ -59,3 +78,6 @@ networks:
       driver: default
       config:
       - subnet: 172.18.0.0/16
+
+volumes:
+  peertube-plugin-premium-users:

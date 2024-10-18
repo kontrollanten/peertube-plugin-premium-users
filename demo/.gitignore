@@ -1,8 +1,6 @@
 docker-volume
 peertube-plugin-premium-users
-.peertube_access_token
-.stripe_api_key
-*.tgz
+.env.stripe
 node_modules/
 /test-results/
 /playwright-report/

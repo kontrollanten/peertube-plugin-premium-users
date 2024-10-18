@@ -21,6 +21,18 @@ To become a premium user a user has to go to My account > Premium and click "Sub
 * ~Add Google Analytics support.~
 
 ## Demo / testing
-* `cd tests`
-* `./setup-test-env.sh`
+Prerequisites:
+* Copy `demo/.env.stripe_example` to `demo/.env.stripe` and fill in your Stripe API token for test environment.
+
+* `cd demo`
+* `STRIPE_API_KEY=sk_test... npm start`
 * `open http://localhost:9000`
+
+### Run e2e tests
+* `npx playwright install --with-deps`
+* `npx playwright test`
+
+## Development
+
+### Run GH actions locally
+`act -s STRIPE_API_KEY=sk_test_... --artifact-server-path /tmp/artifacts`

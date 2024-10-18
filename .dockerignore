@@ -1,0 +1,8 @@
+**/node_modules
+dist
+demo/docker-volume
+demo/peertube-plugin-premium-users
+demo/playwright-report
+demo/test-results
+demo/.env.stripe
+*.tgz # npm pack file

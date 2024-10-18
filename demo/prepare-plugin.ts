@@ -1,4 +1,5 @@
-import { spawn } from 'node:child_process';
+import { exec, spawn } from 'node:child_process';
+import util from 'util'
 import { readFile } from 'fs/promises'
 import Stripe from 'stripe'
 import {
@@ -10,15 +11,20 @@ import {
   SETTING_STRIPE_WEBHOOK_SECRET,
   VIDEO_FIELD_IS_PREMIUM_CONTENT
 } from '../shared/constants';
+import winston from 'winston';
+const execAsync = util.promisify(exec);
 
 type usedStripeResources = keyof Pick<Stripe, 'products' | 'coupons'>
 
 interface RegisteredSettingsResponse { registeredSettings: { name: string, options: { value: string }[] }[] }
 interface Video { id: number, shortUUID: string }
+interface CustomEnv { PEERTUBE_WEBSERVER_HOSTNAME: string, PEERTUBE_WEBSERVER_PORT: string, PT_INITIAL_ROOT_PASSWORD: string, STRIPE_API_KEY: string }
+
+const { PEERTUBE_WEBSERVER_HOSTNAME, PEERTUBE_WEBSERVER_PORT, PT_INITIAL_ROOT_PASSWORD, STRIPE_API_KEY } = (process.env as unknown) as CustomEnv
 
 const PRODUCT_NAME = 'peertube_plugin_premium_users-auto_test-product'
 const COUPON_NAME = 'peertube_premium_users-auto_test-coupon'
-const PEERTUBE_URL = 'http://localhost:9000'
+const PEERTUBE_URL = `http://${PEERTUBE_WEBSERVER_HOSTNAME}:${PEERTUBE_WEBSERVER_PORT}`
 
 const createdStripeResources: { [P in usedStripeResources]: string[] } = {
   coupons: [],
@@ -26,20 +32,31 @@ const createdStripeResources: { [P in usedStripeResources]: string[] } = {
 }
 const createdVideos: string[] = []
 let ptAccessToken: string
-let stripeApiKey: string
 let stripe: Stripe
 
+const logger = winston.createLogger({
+  levels: winston.config.syslog.levels,
+  transports: [
+    new winston.transports.Console({ level: 'info' }),
+    new winston.transports.File({
+      filename: '/app.log',
+      level: 'info'
+    })
+  ]
+});
+
 const startStripeListen = () => new Promise<string>((resolve, reject) => {
+  logger.info('Run stripe listen...')
   const ls = spawn('stripe', [
     'listen',
     '--forward-to',
-    'localhost:9000/plugins/premium-users/router/stripe-webhook',
+    `${PEERTUBE_URL}/plugins/premium-users/router/stripe-webhook`,
     '--api-key',
-    stripeApiKey
+    STRIPE_API_KEY
   ]);
 
   ls.stdout.on('data', (data) => {
-    console.log(`stdout: ${data}`);
+    logger.debug(`stdout: ${data}`);
   });
 
   ls.stderr.on('data', (data: Buffer) => {
@@ -53,11 +70,11 @@ const startStripeListen = () => new Promise<string>((resolve, reject) => {
 
       resolve(whSec)
     }
-    console.error(`stderr: ${data}`);
+    logger.error(`stderr: ${data}`);
   });
 
   ls.on('close', (code) => {
-    console.log(`child process exited with code ${code}`);
+    logger.info(`child process exited with code ${code}`);
   });
 
   setTimeout(() => reject(new Error(`stripe listen command timed out.`)), 10000)
@@ -69,9 +86,11 @@ const createStripeProduct = async () => {
   })
 
   if (searchResult.data.length > 0) {
-    console.info('Found already created product, will not create a new.')
+    logger.info('Found already created product, will not create a new.')
     return
   }
+
+  logger.info(`Create product ${PRODUCT_NAME}`)
 
   const product = await stripe.products.create({
     name: PRODUCT_NAME
@@ -102,9 +121,10 @@ const createStripeCoupon = async () => {
   const searchResult = await stripe.coupons.list()
 
   if (searchResult.data.find(c => c.name === COUPON_NAME)) {
-    console.info('Found already created coupon, will not create a new.')
+    logger.info('Found already created coupon, will not create a new.')
     return
   }
+  logger.info(`Create Stripe coupon ${COUPON_NAME}`)
 
   const coupon = await stripe.coupons.create({
     name: COUPON_NAME,
@@ -117,9 +137,31 @@ const createStripeCoupon = async () => {
 }
 
 const setup = async () => {
-  ptAccessToken = (await readFile('./.peertube_access_token')).toString().trim()
-  stripeApiKey = (await readFile('./.stripe_api_key')).toString().trim()
-  stripe = new Stripe(stripeApiKey)
+  logger.info('Extract plugin...')
+  await execAsync('tar xvf peertube-plugin-premium-users-*.tgz --one-top-level=/peertube-plugin-premium-users --strip-components=1', { cwd: '..' })
+
+  const ptCommands = [
+    `npx peertube-cli auth add -u "${PEERTUBE_URL}" -U "root" --password "${PT_INITIAL_ROOT_PASSWORD}"`,
+    'npx peertube-cli plugins install --path /peertube-plugin-premium-users',
+    `npx peertube-cli get-access-token --url ${PEERTUBE_URL} --username root --password "${PT_INITIAL_ROOT_PASSWORD}"`
+  ]
+
+  for (let i = 0; i < ptCommands.length; i++) {
+    logger.info(`Execute ${ptCommands[i]}...`)
+    const { stdout, stderr } = await execAsync(ptCommands[i])
+
+    if (stderr) {
+      logger.error(`Failed to execute command: ${stderr}`)
+      throw Error(stderr)
+    }
+
+    if (i === (ptCommands.length - 1)) {
+      ptAccessToken = stdout
+    }
+  }
+
+  logger.info('Initiating stripe client...')
+  stripe = new Stripe(STRIPE_API_KEY)
 }
 
 const ptFetch = async (path: string, { headers, ...options }: RequestInit = {}) => {
@@ -134,14 +176,14 @@ const ptFetch = async (path: string, { headers, ...options }: RequestInit = {}) 
   const resp = await fetch(PEERTUBE_URL + '/api/v1' + path, opts)
 
   if (!resp.ok) {
-    console.error(`Failed to call ${path}:` + JSON.stringify({ opts, status: resp.status }, null, 2))
+    logger.error(`Failed to call ${path}:` + JSON.stringify({ opts, status: resp.status }, null, 2))
     throw Error(`Failed to call ${path}:` + JSON.stringify({ opts, status: resp.status }, null, 2))
   }
 
   try {
     return await resp.json()
   } catch (err) {
-    console.info((opts.method || 'GET') + ' ' + path + ': Couldn\'t parse JSON response')
+    logger.info((opts.method || 'GET') + ' ' + path + ': Couldn\'t parse JSON response')
   }
 
   return
@@ -169,11 +211,13 @@ const uploadVideo = async (name: string, videoPath: string, privacy: number) => 
 const configurePlugin = async (webhookSecret: string, replacementVideo: Video): Promise<void> => {
   const pluginSettings = {
     [SETTING_ENABLE_PLUGIN]: true,
-    [SETTING_STRIPE_API_KEY]: stripeApiKey,
+    [SETTING_STRIPE_API_KEY]: STRIPE_API_KEY,
     [SETTING_STRIPE_WEBHOOK_SECRET]: webhookSecret,
     [SETTING_STRIPE_PRODUCT_ID]: createdStripeResources.products[0],
     [SETTING_REPLACEMENT_VIDEO]: PEERTUBE_URL + '/w/' + replacementVideo.shortUUID
   }
+
+  logger.info('Configure plugin settings...')
 
   await ptFetch('/plugins/peertube-plugin-premium-users/settings', {
     headers: {
@@ -211,6 +255,7 @@ const configurePlugin = async (webhookSecret: string, replacementVideo: Video): 
 }
 
 const run = async () => {
+  logger.info('Upload videos...')
   const replacementVideo = await uploadVideo('Replacement video', './fixtures/replacement-video.mp4', 2)
   createdVideos.push(replacementVideo.shortUUID)
   const premiumVideo = await uploadVideo('Premium video', './fixtures/premium-video.mp4', 1)
@@ -223,7 +268,7 @@ const run = async () => {
 
   await configurePlugin(webhookSecret, replacementVideo)
 
-  console.info('Waiting for transcoding...')
+  logger.info('Waiting for transcoding...')
 
 
   let videosTranscoded = false
@@ -255,7 +300,8 @@ const run = async () => {
     body: formData
   })
 
-  console.log('Premium video available at ' + PEERTUBE_URL + '/w/' + premiumVideo.shortUUID)
+  logger.info('Premium video available at ' + PEERTUBE_URL + '/w/' + premiumVideo.shortUUID)
+  logger.info('PREP_READY')
 }
 
 const cleanup = async () => {
@@ -282,12 +328,12 @@ const cleanup = async () => {
     await setup()
     await run()
   } catch (err) {
-    console.error('Failed', { err })
+    logger.error('Failed', { err })
     await cleanup()
     process.exit()
   }
-})().catch(err => console.error(err))
+})().catch(err => logger.error(err))
 
 process.on('SIGINT', () => {
-  cleanup().catch((err) => console.error(err))
+  cleanup().catch((err) => logger.error(err))
 })

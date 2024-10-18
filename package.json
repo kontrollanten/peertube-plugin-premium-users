@@ -41,13 +41,14 @@
     "prepare": "npm run build",
     "build:client": "node ./scripts/build.cjs",
     "build:server": "tsc --build server/tsconfig.json",
-    "build:styles": "npx sass --no-source-map assets:dist/assets",
+    "build:styles": "npx --yes sass --no-source-map assets:dist/assets",
     "build": "npm-run-all -s clean check:client:tsc -p build:server build:client build:styles",
     "check:client:tsc": "npx tsc --p client/tsconfig.json --noEmit",
     "lint:script": "npx eslint .",
     "lint:styles": "stylelint 'assets/**/*.scss'",
     "test": "npm-run-all -p lint:script lint:styles test:unit",
-    "test:unit": "mocha --require ts-node/register server/*.spec.ts"
+    "test:unit": "mocha --require ts-node/register server/*.spec.ts",
+    "test:e2e": "cd demo && npm ci && npm test"
   },
   "staticDirs": {
     "images": "public/images"
