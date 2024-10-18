@@ -61,6 +61,7 @@ test.describe('authenticated user', () => {
     await page.getByLabel(/expiration/i).fill('05/32')
     await page.getByPlaceholder(/cvc/i).fill('123')
     await page.getByPlaceholder(/full name/i).fill('John Premium')
+    await page.getByLabel(/country/i).selectOption('Sweden')
     await page.getByTestId('hosted-payment-submit-button').click()
 
     await page.waitForURL(/premium/i)
