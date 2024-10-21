@@ -4,6 +4,7 @@
   "version": "1.6.3",
   "author": "kontrollanten",
   "bugs": "https://framagit.org/kontrollanten/peertube-plugin-premium-user/issues",
+  "type": "module",
   "clientScripts": [
     {
       "script": "dist/client/my-account/index.js",

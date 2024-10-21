@@ -1,6 +1,6 @@
 import 'mocha'
 import { equal } from 'assert'
-import { isPremiumUser, ONE_DAY } from './utils'
+import { isPremiumUser, ONE_DAY } from './utils.js'
 
 describe('utils', () => {
   describe('isPremiumUser', () => {
