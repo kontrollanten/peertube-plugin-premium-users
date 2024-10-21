@@ -13,9 +13,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
-      - name: Get installed Playwright version
-        id: playwright-version
-        run: echo "PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package-lock.json').dependencies['@playwright/test'].version)")" >> $GITHUB_ENV
       - name: Get npm cache directory
         id: npm-cache-dir
         shell: bash
@@ -27,17 +24,18 @@ jobs:
           path: |
             ~/.cache/ms-playwright
             ${{ steps.npm-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-v2
           restore-keys: |
+            ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-v2
             ${{ runner.os }}-node-
       - name: Install dependencies
-        working-directory: demo
-        run: npm ci
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npm ci --include=dev && cd demo && npm ci
       - name: Install Playwright Browsers
         working-directory: demo
         run: npx playwright install firefox --with-deps
         if: steps.playwright-cache.outputs.cache-hit != 'true'
+      - name: Run unit tests
+        run: npm run test:unit
       - name: Run docker compose
         working-directory: demo
         run: docker compose up --build --wait
