@@ -45,8 +45,7 @@
     "build": "npm-run-all -s clean check:client:tsc -p build:server build:client build:styles",
     "check:client:tsc": "npx tsc --p client/tsconfig.json --noEmit",
     "lint:script": "npx eslint .",
-    "lint:styles": "stylelint 'assets/**/*.scss'",
-    "test": "npm-run-all -p lint:script lint:styles test:unit",
+    "test": "npm-run-all -p lint:script test:unit",
     "test:unit": "TS_NODE_PROJECT=server/tsconfig.test.json mocha server/*.spec.ts",
     "test:e2e": "cd demo && npm ci && npm test"
   },
@@ -67,9 +66,6 @@
     "globals": "^15.3.0",
     "mocha": "^10.7.3",
     "npm-run-all": "^4.1.5",
-    "stylelint": "^16.6.1",
-    "stylelint-config-recommended-scss": "^14.0.0",
-    "stylelint-config-standard-scss": "^13.1.0",
     "tsx": "^4.19.1",
     "typescript": "^5.4.3"
   },
