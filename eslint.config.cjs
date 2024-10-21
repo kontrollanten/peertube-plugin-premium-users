@@ -15,7 +15,7 @@ module.exports = [
         "parserOptions": {
             "ecmaVersion": 2018,
             "project": [
-                "./tests/tsconfig.json",
+                "./demo/tsconfig.json",
                 "./server/tsconfig.json",
                 "./client/tsconfig.json"
             ]
@@ -40,7 +40,7 @@ module.exports = [
             "comments": 120
           }
         ],
-        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": ["error", { "caughtErrorsIgnorePattern": "^ignore" }],
         "indent": [2, 2]
     }
   },

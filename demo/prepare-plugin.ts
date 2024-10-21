@@ -18,9 +18,18 @@ type usedStripeResources = keyof Pick<Stripe, 'products' | 'coupons'>
 
 interface RegisteredSettingsResponse { registeredSettings: { name: string, options: { value: string }[] }[] }
 interface Video { id: number, shortUUID: string }
-interface CustomEnv { PEERTUBE_WEBSERVER_HOSTNAME: string, PEERTUBE_WEBSERVER_PORT: string, PT_INITIAL_ROOT_PASSWORD: string, STRIPE_API_KEY: string }
+interface CustomEnv {
+  PEERTUBE_WEBSERVER_HOSTNAME: string,
+  PEERTUBE_WEBSERVER_PORT: string,
+  PT_INITIAL_ROOT_PASSWORD: string,
+  STRIPE_API_KEY: string
+}
 
-const { PEERTUBE_WEBSERVER_HOSTNAME, PEERTUBE_WEBSERVER_PORT, PT_INITIAL_ROOT_PASSWORD, STRIPE_API_KEY } = (process.env as unknown) as CustomEnv
+const { PEERTUBE_WEBSERVER_HOSTNAME,
+  PEERTUBE_WEBSERVER_PORT,
+  PT_INITIAL_ROOT_PASSWORD,
+  STRIPE_API_KEY
+} = (process.env as unknown) as CustomEnv
 
 const PRODUCT_NAME = 'peertube_plugin_premium_users-auto_test-product'
 const COUPON_NAME = 'peertube_premium_users-auto_test-coupon'
@@ -138,7 +147,10 @@ const createStripeCoupon = async () => {
 
 const setup = async () => {
   logger.info('Extract plugin...')
-  await execAsync('tar xvf peertube-plugin-premium-users-*.tgz --one-top-level=/peertube-plugin-premium-users --strip-components=1', { cwd: '..' })
+  await execAsync(
+    'tar xvf peertube-plugin-premium-users-*.tgz --one-top-level=/peertube-plugin-premium-users --strip-components=1',
+    { cwd: '..' }
+  )
 
   const ptCommands = [
     `npx peertube-cli auth add -u "${PEERTUBE_URL}" -U "root" --password "${PT_INITIAL_ROOT_PASSWORD}"`,
@@ -182,7 +194,7 @@ const ptFetch = async (path: string, { headers, ...options }: RequestInit = {}) 
 
   try {
     return await resp.json()
-  } catch (err) {
+  } catch (ignoreErr) {
     logger.info((opts.method || 'GET') + ' ' + path + ': Couldn\'t parse JSON response')
   }
 
