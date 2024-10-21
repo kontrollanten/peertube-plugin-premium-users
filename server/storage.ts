@@ -31,9 +31,11 @@ export class Storage {
   }
 
   addPremiumVideo = async (uuid: string): Promise<void> => {
-    await this.sequelLight.query(`INSERT INTO ${this.tables.premiumVideos} ("videoUuid") VALUES(?)`, {
-      replacements: [uuid]
-    })
+    await this.sequelLight.query(
+      `INSERT INTO ${this.tables.premiumVideos} ("videoUuid") VALUES(?) ON CONFLICT DO NOTHING`,
+      {
+        replacements: [uuid]
+      })
   }
 
   removePremiumVideo = async (uuid: string): Promise<void> => {
