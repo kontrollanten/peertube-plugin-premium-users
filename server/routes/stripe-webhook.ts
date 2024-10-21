@@ -75,7 +75,7 @@ export class StripeWebhook {
     // eslint-disable-next-line max-len
     // https://docs.stripe.com/billing/subscriptions/build-subscriptions?platform=web&ui=stripe-hosted#provision-and-monitor
 
-    if (!['checkout.session.completed', 'invoice.paid'].includes(event.type)) {
+    if (!['checkout.session.completed', 'invoice.paid', 'invoice.payment_failed'].includes(event.type)) {
       res.status(200).end()
 
       return
