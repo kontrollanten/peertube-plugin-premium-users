@@ -17,6 +17,7 @@ module.exports = [
             "project": [
                 "./demo/tsconfig.json",
                 "./server/tsconfig.json",
+                "./server/tsconfig.test.json",
                 "./client/tsconfig.json"
             ]
         },
