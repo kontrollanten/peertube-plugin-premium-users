@@ -34,6 +34,8 @@ jobs:
         working-directory: demo
         run: npx playwright install firefox --with-deps
         if: steps.playwright-cache.outputs.cache-hit != 'true'
+      - name: Run lint
+        run: npm run lint:script
       - name: Run unit tests
         run: npm run test:unit
       - name: Run docker compose
