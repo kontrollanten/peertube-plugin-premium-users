@@ -48,7 +48,7 @@
     "lint:script": "npx eslint .",
     "lint:styles": "stylelint 'assets/**/*.scss'",
     "test": "npm-run-all -p lint:script lint:styles test:unit",
-    "test:unit": "mocha --require ts-node/register server/*.spec.ts",
+    "test:unit": "mocha server/*.spec.ts",
     "test:e2e": "cd demo && npm ci && npm test"
   },
   "staticDirs": {
@@ -71,7 +71,7 @@
     "stylelint": "^16.6.1",
     "stylelint-config-recommended-scss": "^14.0.0",
     "stylelint-config-standard-scss": "^13.1.0",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.19.1",
     "typescript": "^5.4.3"
   },
   "dependencies": {

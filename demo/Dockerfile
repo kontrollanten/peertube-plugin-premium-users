@@ -16,4 +16,4 @@ WORKDIR /app/demo
 RUN npm ci
 
 ENTRYPOINT [ "npx" ]
-CMD [ "ts-node", "prepare-plugin" ]
+CMD [ "tsx", "prepare-plugin" ]
