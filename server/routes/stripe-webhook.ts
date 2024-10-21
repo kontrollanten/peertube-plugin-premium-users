@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-namespace */
 import type { PeerTubeHelpers, PluginSettingsManager } from '@peertube/peertube-types'
 
 import express from 'express'

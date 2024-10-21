@@ -138,7 +138,7 @@ async function register ({
     try {
       const eventualLongUuid = replacementVideoUrl.split('/').pop() ?? ''
       replacementVideoUrl = replacementVideoUrl.replace(eventualLongUuid, uuidTranslator.toUUID(eventualLongUuid))
-    } catch (err) {}
+    } catch (ignoreErr) {}
 
     const replacementVideo = await peertubeHelpers.videos.loadByUrl(replacementVideoUrl)
 
@@ -384,31 +384,26 @@ async function register ({
   router.post(
     '/stripe-webhook',
     express.raw({ type: 'application/json' }),
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     stripeWebhook.routeHandler
   )
 
   router.get(
     '/subscription',
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     subscripton.get
   )
 
   router.patch(
     '/subscription',
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     subscripton.patch
   )
 
   router.post(
     '/checkout',
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     checkout.post
   )
 
   router.get(
     '/price',
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     price.get
   )
 }
