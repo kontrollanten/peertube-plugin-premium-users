@@ -163,10 +163,12 @@ async function register ({
       name: SETTING_STRIPE_PRODUCT_ID,
       label: 'Stripe product used for premium subscription',
       type: 'select',
-      options: stripeProducts.map((product) => ({
-        value: product.id,
-        label: product.name ?? product.id
-      })),
+      options: stripeProducts
+        .filter((product) => product.active)
+        .map((product) => ({
+          value: product.id,
+          label: product.name ?? product.id
+        })),
       private: true
     })
   }
