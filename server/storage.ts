@@ -56,6 +56,15 @@ export class Storage {
     return Boolean(result)
   }
 
+  getUserIdFromEmail = async (email: string): Promise<number | undefined> => {
+    const [{ id } = {}] = await this.sequelLight.query(`SELECT id FROM public.user WHERE email = ?`, {
+      type: sequelize.QueryTypes.SELECT,
+      replacements: [email]
+    }) as { id: number }[]
+
+    return id
+  }
+
   getUserInfo = async (userId?: number): Promise<PluginUserInfo | undefined> => {
     if (!userId) return
 
