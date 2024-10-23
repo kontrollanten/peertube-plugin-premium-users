@@ -66,6 +66,7 @@ test.describe('anonymous user', () => {
 
 test.describe('authenticated user', () => {
   test.describe.configure({ mode: 'serial' });
+  test.describe.configure({ timeout: 60000 }) // Increase timeout to handle Stripe checkout
 
   const TEST_ID = Math.round(Date.now() / 1000)
   const NAME = 'John Premium ' + TEST_ID
