@@ -3,7 +3,7 @@
   "description": "PeerTube plugin premium user",
   "version": "1.6.3",
   "author": "kontrollanten",
-  "bugs": "https://framagit.org/kontrollanten/peertube-plugin-premium-user/issues",
+  "bugs": "https://github.com/kontrollanten/peertube-plugin-premium-users/issues",
   "clientScripts": [
     {
       "script": "dist/client/my-account/index.js",
@@ -30,7 +30,7 @@
   "engine": {
     "peertube": ">=6.0.0"
   },
-  "homepage": "https://framagit.org/kontrollanten/peertube-plugin-premium-user",
+  "homepage": "https://github.com/kontrollanten/peertube-plugin-premium-users",
   "keywords": [
     "peertube",
     "plugin"
