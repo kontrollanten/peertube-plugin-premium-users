@@ -50,6 +50,8 @@ jobs:
       - name: Run Playwright tests
         working-directory: demo
         run: npx playwright test
+        env:
+          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
