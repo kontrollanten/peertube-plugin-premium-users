@@ -74,7 +74,7 @@ export class SubscriptionRoute {
       )
     }
 
-    const activeSubscriptions = subscriptions.filter((s) => s.status === 'active') ?? []
+    const activeSubscriptions = subscriptions.filter((s) => ['trialing', 'active'].includes(s.status)) ?? []
 
     if (activeSubscriptions.length > 0) {
       if (activeSubscriptions.length > 1) {

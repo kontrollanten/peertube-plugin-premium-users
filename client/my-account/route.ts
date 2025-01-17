@@ -3,6 +3,7 @@ import { Api } from '../api'
 import { renderPremiumPage } from './premium-user'
 import { renderNonPremiumPage } from './non-premium-user'
 import { trackGAAction } from '../utils'
+import { MyUser } from '@peertube/peertube-types'
 
 export const buildOnMount = (peertubeHelpers: RegisterClientHelpers) =>
   async ({ rootEl }: { rootEl: HTMLElement }): Promise<void> => {
@@ -28,9 +29,9 @@ export const buildOnMount = (peertubeHelpers: RegisterClientHelpers) =>
     }
 
     const subscription = await restApi.getSubscription()
-    const isPremiumUser = subscription.status === 'active'
+    const user = await peertubeHelpers.getUser() as MyUser & { isPremium: boolean }
 
-    if (isPremiumUser) {
+    if (user.isPremium) {
       await renderPremiumPage({ peertubeHelpers, rootEl, subscription })
     } else {
       await renderNonPremiumPage({ peertubeHelpers, rootEl })

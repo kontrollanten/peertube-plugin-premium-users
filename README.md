@@ -4,9 +4,6 @@
 This plugin will add a video field where uploaders can choose whether the video is a premium video or not. Premium videos will only be shown for paid users, other users will see a preselected default video.
 To become a premium user a user has to go to My account > Premium and click "Subscribe to become a premium user". He will then be redirected to Stripe and when the checkout is complete he's a premium user.
 
-### Limitations
-* No support for adding a user as trialing via Stripe
-
 ### How to manually add premium users
 1. Login to [Stripe dashboard](https://dashboard.stripe.com/).
 1. Go to _Customers_.
