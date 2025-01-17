@@ -83,7 +83,7 @@ export const renderNonPremiumPage = async ({
       [
         uiBuilder.p(
           await translate(
-            'As a premium user you\'ll get access to premium videos and helps us to continue or work.'
+            'As a premium user you\'ll get access to premium videos and helps us to continue our work.'
           )
         )
       ]

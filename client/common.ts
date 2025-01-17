@@ -140,7 +140,7 @@ export async function register ({
           uiBuilder.img('/client/assets/images/icons/icon-192x192.png', 'instance-logo'),
           uiBuilder.h2(await peertubeHelpers.translate('Become a premium user')),
           uiBuilder.p(await peertubeHelpers.translate(
-            'Get access to premium videos and helps us to continue or work.'
+            'Get access to premium videos and helps us to continue our work.'
           )),
           uiBuilder.div(
             pricingColumns.map((c) => uiBuilder.div([c], 'col-12 col-sm-6 d-flex')),
