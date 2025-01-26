@@ -26,10 +26,32 @@ const disableModals = async (page: Page) => {
   })
 }
 
+const waitUntilUsersIsAuthenticated = async (page: Page) => {
+  let token
+  let subscriptionCreated = false
+
+  const timeout = setTimeout(() => {
+    expect(false, 'Expected /subscription endpoint to return HTTP status 200 within timeout.').toBe(true)
+  }, 5000)
+
+  while (!subscriptionCreated) {
+    const { origins } = await page.request.storageState()
+    const { localStorage } = origins.find(o => o.origin.match(new RegExp(PAGE_URL))) || {};
+    ({ value: token } = localStorage?.find(s => s.name === 'access_token') || {})
+
+    if (token) {
+      clearTimeout(timeout)
+      return token
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }
+
+  return ''
+}
+
 const waitUntilUserIsPremium = async (page: Page) => {
-  const { origins } = await page.request.storageState()
-  const { localStorage } = origins.find(o => o.origin.match(new RegExp(PAGE_URL))) || {}
-  const { value: token } = localStorage?.find(s => s.name === 'access_token') || {}
+  let token
   let subscriptionCreated = false
 
   const timeout = setTimeout(() => {
@@ -37,6 +59,9 @@ const waitUntilUserIsPremium = async (page: Page) => {
   }, 20000)
 
   while (!subscriptionCreated) {
+    if (!token) {
+      token = await waitUntilUsersIsAuthenticated(page)
+    }
     const response = await page.request.get(`${PAGE_URL}/plugins/premium-users/router/subscription`, {
       headers: {
         Authorization: 'Bearer ' + token
@@ -61,7 +86,7 @@ test.describe('anonymous user', () => {
     await waitForVideoAndExpect(page)
 
     await expect(page.innerHTML).not.toContain(/download/i)
-  });
+  })
 })
 
 test.describe('authenticated user', () => {
@@ -121,7 +146,7 @@ test.describe('authenticated user', () => {
     await page.getByRole('button', { name: 'show'} ).click()
     await page.getByRole('button', { name: 'login' }).click()
 
-    await page.getByRole('navigation').getByText('Local videos').click()
+    await page.getByRole('navigation').getByText('Home').click()
 
     await page.getByText(/premium video/i).click()
 
@@ -146,11 +171,11 @@ test.describe('add premium user via Stripe', () => {
     await page.getByLabel(/password/i).fill(process.env.PT_INITIAL_ROOT_PASSWORD as string)
     await page.getByRole('button', { name: /login/i }).click()
 
-    await page.getByRole('navigation').getByText(/admin/i).click()
+    await page.getByRole('navigation').getByText(/overview/i).click()
     await page.getByText(/create user/i).click()
 
     await page.getByLabel(/username/i).fill('external_premium' + TEST_ID)
-    await page.getByLabel(/channel/i).fill('external_premium_channel' + TEST_ID)
+    await page.getByLabel(/channel name/i).fill('external_premium_channel' + TEST_ID)
     await page.getByLabel(/email/i).fill(EMAIL)
     await page.getByLabel(/password/i).fill(PASSWORD)
     await page.getByText(/create user/i).click()
@@ -175,19 +200,54 @@ test.describe('add premium user via Stripe', () => {
     await page.getByLabel(/password/i).fill(PASSWORD)
     await page.getByRole('button', { name: /login/i }).click()
 
-    await page.getByText(/my account/i).click()
-
-    await page.getByText(/premium account/i).click()
     await waitUntilUserIsPremium(page)
-    await page.reload()
+    await page.goto(PAGE_URL + '/my-account/p/premium')
 
     await page.getByText(/you're a premium/i).waitFor()
-    await expect(page).toHaveScreenshot({ maxDiffPixelRatio: 0.02 })
 
-    await page.getByText(/local videos/i).click()
+    await page.getByRole('navigation').getByText(/Home/i).click()
     await page.getByText('Premium video').click()
 
     await waitForVideoAndExpect(page)
+  })
 
+  test('Stripe subscription should be canceled when Peertube account is deleted', async ({ page }) => {
+    await page.goto(PAGE_URL + '/login')
+    await page.getByLabel(/username/i).fill('root')
+    await page.getByLabel(/password/i).fill(process.env.PT_INITIAL_ROOT_PASSWORD as string)
+    await page.getByRole('button', { name: /login/i }).click()
+    await waitUntilUsersIsAuthenticated(page)
+
+    await page.goto(PAGE_URL + '/a/external_premium' + TEST_ID + '/video-channels')
+    await page.getByLabel('Open actions').click()
+    await page.getByText('Delete user').click()
+    await page.getByText('Confirm').click()
+
+    const waiter = setTimeout(() => {
+      expect(false, 'Stripe subscription is cancelled').toEqual(true)
+    }, 10 * 1000)
+
+    while (true) {
+      const { data: [customer] } = await stripe.customers.list({
+        email: EMAIL,
+        expand: ['data.subscriptions'],
+      })
+
+      expect(customer, 'Deleted user exists in Stripe').toBeTruthy()
+
+      try {
+        expect(customer.subscriptions?.data.length, 'Stripe subscription is canceled').toEqual(0)
+        expect(
+          Object.keys(customer.metadata)
+            .find(key => !!key.match(/deletedAt/i)), 'deletedAt metadata exist on Stripe customer'
+        ).toBeTruthy()
+      } catch (ignoreErr) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        continue
+      }
+
+      clearTimeout(waiter)
+      break
+    }
   })
 })

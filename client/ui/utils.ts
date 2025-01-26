@@ -86,7 +86,7 @@ export const getFormattedPaymentAlternatives = async (
   const hasButton = !!buttonOnClick
 
   const button = uiBuilder.a(formattedPrice, {
-    class: 'orange-button peertube-button-link mb-4',
+    class: 'primary-button peertube-button-link mb-4',
     'data-testid': `premium_users-button-pay_` + price.recurring?.interval
   })
 

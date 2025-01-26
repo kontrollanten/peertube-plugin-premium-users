@@ -33,25 +33,21 @@ export async function register ({
 
       const user = peertubeHelpers.getUser()
       const premiumLink = peertubeHelpers.isLoggedIn() ? '/my-account/p/premium' : '/p/premium'
-      const premiumLabel = await peertubeHelpers.translate('Become premium')
-
-      if (user?.isPremium) {
-        return items
-      }
+      const premiumLabel = await peertubeHelpers.translate(user?.isPremium ? 'Premium account' : 'Become premium')
 
       return items.map((subMenu) => {
-        if (subMenu.key === 'on-instance') {
+        if (subMenu.key === 'quick-access') {
           return {
             ...subMenu,
             links: [
+              ...subMenu.links,
               {
                 path: premiumLink,
-                icon: 'premium',
-                iconClass: 'premium-icon',
+                icon: user?.isPremium ? 'premium' : undefined,
                 label: premiumLabel,
-                shortLabel: premiumLabel
+                shortLabel: premiumLabel,
+                isPrimaryButton: !user?.isPremium,
               },
-              ...subMenu.links
             ]
           }
         }
@@ -148,13 +144,13 @@ export async function register ({
           ),
           uiBuilder.div([
             uiBuilder.a(await peertubeHelpers.translate('Create an account'), {
-              class: 'orange-button peertube-button-link button-md mb-2',
+              class: 'primary-button peertube-button-link button-md mb-2',
               href: '/signup?redirect=/my-account/p/premium',
               'data-testid': 'premium_users-button-create_account'
             }),
             uiBuilder.p(await peertubeHelpers.translate('or'), 'mb-0'),
             uiBuilder.a(await peertubeHelpers.translate('Login'), {
-              class: 'grey-button peertube-button-link mt-2 button-md',
+              class: 'secondary-button peertube-button-link mt-2 button-md',
               href: '/login?redirect=/my-account/p/premium'
             })
           ], 'action-buttons d-flex justify-content-center flex-column mb-4 mx-sm-auto')
