@@ -8,6 +8,7 @@ import { Storage } from '../storage'
 import { SETTING_STRIPE_API_KEY } from '../../shared/constants'
 import Stripe from 'stripe'
 import { Subscription } from '../types'
+import { getCustomerSubscriptions } from '../utils'
 
 const convertStripeDateToString = (date: number): string =>
   new Date(date * 1000).toISOString()
@@ -62,32 +63,17 @@ export class SubscriptionRoute {
       return
     }
 
-    customer = customer as Stripe.Customer
-
-    // Sort to have newest subscription first
-    const subscriptions = customer.subscriptions?.data.sort((a, b) => b.created > a.created ? 1 : -1) ?? []
-
-    if (subscriptions.length && subscriptions.length > 1) {
-      this.peertubeHelpers.logger.info(
-        `Customer ${String(customerId)} has multiple subscriptions:
-         ${String(subscriptions.length)}`
-      )
-    }
-
-    const activeSubscriptions = subscriptions.filter((s) => ['trialing', 'active'].includes(s.status)) ?? []
+    const { activeSubscriptions, inactiveSubscriptions } = await getCustomerSubscriptions(
+      customer,
+      this.settingsManager,
+      this.peertubeHelpers
+    )
 
     if (activeSubscriptions.length > 0) {
-      if (activeSubscriptions.length > 1) {
-        this.peertubeHelpers.logger.warn(
-          `Customer ${String(customerId)} has multiple active subscriptions:
-           ${String(activeSubscriptions.length)}`
-        )
-      }
-
       return activeSubscriptions[0]
     }
 
-    return subscriptions[0]
+    return inactiveSubscriptions[0]
   }
 
   get = async (req: express.Request, res: express.Response): Promise<void> => {

@@ -7,7 +7,7 @@ import {
   type PeerTubeHelpers,
   type PluginSettingsManager
 } from '@peertube/peertube-types'
-import { getStripeCustomerMetadataFieldName } from '../utils'
+import { getStripeCustomerMetadataFieldNames } from '../utils'
 
 export class CheckoutRoute {
   peertubeHelpers: PeerTubeHelpers
@@ -61,7 +61,7 @@ export class CheckoutRoute {
           email: user.email,
           name: user.username,
           metadata: {
-            [getStripeCustomerMetadataFieldName(this.peertubeHelpers)]: user.id
+            [getStripeCustomerMetadataFieldNames(this.peertubeHelpers).userId]: user.id
           }
         })
       } catch (err) {
@@ -69,7 +69,7 @@ export class CheckoutRoute {
       }
     }
 
-    if (customer && !customer.metadata[getStripeCustomerMetadataFieldName(this.peertubeHelpers)]) {
+    if (customer && !customer.metadata[getStripeCustomerMetadataFieldNames(this.peertubeHelpers).userId]) {
       this.peertubeHelpers.logger.debug(
         'Customer seems to\'ve been created outside of Peertube, will add Peertube user id.'
       )
@@ -78,7 +78,7 @@ export class CheckoutRoute {
         await stripe.customers.update(customer.id, {
           metadata: {
             ...customer.metadata,
-            [getStripeCustomerMetadataFieldName(this.peertubeHelpers)]: user.id
+            [getStripeCustomerMetadataFieldNames(this.peertubeHelpers).userId]: user.id
           }
         })
       } catch (err) {

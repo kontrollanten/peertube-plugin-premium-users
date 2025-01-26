@@ -1,4 +1,4 @@
-import sequelize from 'sequelize'
+import sequelize, { QueryTypes } from 'sequelize'
 import { PluginUserInfo } from './types'
 
 export class Storage {
@@ -15,6 +15,7 @@ export class Storage {
     this.sequelLight = sequelLight
   }
 
+
   init = async (): Promise<void> => {
     await this.sequelLight.query(`CREATE TABLE IF NOT EXISTS ${this.tables.premiumUsers} (
       "userId" integer NOT NUll,
@@ -24,6 +25,25 @@ export class Storage {
       "customerId" varchar(256),
       PRIMARY KEY ("userId")
     )`)
+
+    const fKeyName = 'userId_user_fkey'
+
+    const existingFkeys = await this.sequelLight.query(`
+      SELECT 1 AS "fkeyCount" FROM information_schema.table_constraints
+      WHERE constraint_name='${fKeyName}' AND table_name=${this.tables.premiumUsers.replaceAll('"', '\'')};
+    `, {
+      type: QueryTypes.SELECT
+    })
+
+    if (existingFkeys?.length === 0) {
+      await this.sequelLight.query(`
+        ALTER TABLE ${this.tables.premiumUsers}
+        ADD CONSTRAINT
+          "${fKeyName}" FOREIGN KEY ("userId")
+          REFERENCES public.user(id) ON DELETE CASCADE
+      `)
+    }
+
     await this.sequelLight.query(`CREATE TABLE IF NOT EXISTS ${this.tables.premiumVideos} (
       "videoUuid" varchar(256) NOT NUll,
       PRIMARY KEY ("videoUuid")

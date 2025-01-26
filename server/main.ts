@@ -27,7 +27,13 @@ import {
 } from '../shared/constants'
 import { Storage } from './storage'
 import { SubscriptionRoute } from './routes/subscription'
-import { getStripeCoupons, getStripeProducts, isPremiumUser } from './utils'
+import {
+  getCustomerSubscriptions,
+  getStripeCoupons,
+  getStripeCustomerMetadataFieldNames,
+  getStripeProducts,
+  isPremiumUser
+} from './utils'
 import { CheckoutRoute } from './routes/checkout'
 import { PriceRoute } from './routes/price'
 
@@ -374,6 +380,47 @@ async function register ({
       result.isPremium = isPremiumUser(userInfo)
 
       return result
+    }
+  })
+
+  registerHook({
+    target: 'action:api.user.deleted',
+    handler: async ({ user }: { user: MUser }) => {
+      const stripeFieldNames = getStripeCustomerMetadataFieldNames(peertubeHelpers)
+      const stripeApiKey = await settingsManager.getSetting(SETTING_STRIPE_API_KEY) as string
+      const stripe = new Stripe(stripeApiKey)
+
+      await stripe.customers.list()
+
+      const { data: customers } = await stripe.customers.list({
+        expand: ['data.subscriptions'],
+        email: user.email,
+      })
+
+      for (const customer of customers) {
+        if (+customer.metadata[stripeFieldNames.userId] !== user.id) continue
+
+        const { activeSubscriptions } = await getCustomerSubscriptions(
+          customer,
+          settingsManager,
+          peertubeHelpers
+        )
+
+        for (const subscription of activeSubscriptions) {
+          await stripe.subscriptions.cancel(subscription.id, {
+            cancellation_details: {
+              comment: 'Automatically cacneled due to deleted Peertube account'
+            }
+          })
+        }
+
+        await stripe.customers.update(customer.id, {
+          metadata: {
+            [stripeFieldNames.deletedAt]: new Date().toISOString(),
+            [stripeFieldNames.userId]: '',
+          }
+        })
+      }
     }
   })
 
