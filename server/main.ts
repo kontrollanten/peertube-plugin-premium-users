@@ -409,7 +409,7 @@ async function register ({
         for (const subscription of activeSubscriptions) {
           await stripe.subscriptions.cancel(subscription.id, {
             cancellation_details: {
-              comment: 'Automatically cacneled due to deleted Peertube account'
+              comment: 'Automatically canceled due to deleted Peertube account'
             }
           })
         }
