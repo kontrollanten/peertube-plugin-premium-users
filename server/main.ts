@@ -430,30 +430,40 @@ async function register ({
   const checkout = new CheckoutRoute(peertubeHelpers, settingsManager, storage)
   const price = new PriceRoute(peertubeHelpers, settingsManager)
 
+  const wrapHandler =
+    (handler: express.Handler) =>
+      (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+          return handler(req, res, next)
+        } catch (err) {
+          console.error(err)
+        }
+      }
+
   router.post(
     '/stripe-webhook',
     express.raw({ type: 'application/json' }),
-    stripeWebhook.routeHandler
+    wrapHandler(stripeWebhook.routeHandler)
   )
 
   router.get(
     '/subscription',
-    subscripton.get
+    wrapHandler(subscripton.get)
   )
 
   router.patch(
     '/subscription',
-    subscripton.patch
+    wrapHandler(subscripton.patch)
   )
 
   router.post(
     '/checkout',
-    checkout.post
+    wrapHandler(checkout.post)
   )
 
   router.get(
     '/price',
-    price.get
+    wrapHandler(price.get)
   )
 }
 
