@@ -9,7 +9,7 @@ import {
   SETTING_STRIPE_WEBHOOK_SECRET
 } from '../../shared/constants'
 import { Storage } from '../storage'
-import { getStripeCustomerMetadataFieldNames } from '../utils'
+import { getCurrentPeriodEnd, getStripeCustomerMetadataFieldNames } from '../utils'
 
 declare global {
   namespace Express {
@@ -88,7 +88,7 @@ export class StripeWebhook {
     if (this.isSessionSubscription(session, event.type)) {
       subscription = session
     } else {
-      if (!session.subscription) {
+      if (!('subscription' in session)) {
         res.status(200).end()
         this.logger.debug(`Received web hook event ${event.type} without subscription, exiting.`)
 
@@ -125,11 +125,11 @@ export class StripeWebhook {
     }
 
     if (event.type === 'invoice.paid') {
-      await this.updateUserFromInvoice(session as Stripe.Invoice, subscription)
+      await this.updateUserFromInvoice(session as unknown as Stripe.Invoice, subscription)
     }
 
     if (event.type === 'invoice.payment_failed') {
-      await this.updateUserFromFailedPayment(session as Stripe.Invoice)
+      await this.updateUserFromFailedPayment(session as unknown as Stripe.Invoice)
     }
 
     if (event.type === 'customer.subscription.created') {
@@ -240,7 +240,7 @@ export class StripeWebhook {
       const userId = await this.getUserIdFromSession(session)
       const userInfo = await this.storage.getUserInfo(userId) ?? {}
 
-      userInfo.paidUntil = new Date(subscription.current_period_end * 1000).toISOString()
+      userInfo.paidUntil = new Date(await getCurrentPeriodEnd(this.settingsManager, subscription) * 1000).toISOString()
       userInfo.hasPaymentFailed = false
 
       await this.storage.storeUserInfo(userId, userInfo)
@@ -251,7 +251,7 @@ export class StripeWebhook {
       const userId = await this.getUserIdFromSession(session)
       const userInfo = await this.storage.getUserInfo(userId) ?? {}
 
-      userInfo.paidUntil = new Date(subscription.current_period_end * 1000).toISOString()
+      userInfo.paidUntil = new Date(await getCurrentPeriodEnd(this.settingsManager, subscription) * 1000).toISOString()
       userInfo.customerId = session.customer as string
       userInfo.subscriptionId = session.subscription as string
       userInfo.hasPaymentFailed = false
@@ -264,7 +264,7 @@ export class StripeWebhook {
       const userId = await this.getUserIdFromSession(subscription)
       const userInfo = await this.storage.getUserInfo(userId) ?? {}
 
-      userInfo.paidUntil = new Date(subscription.current_period_end * 1000).toISOString()
+      userInfo.paidUntil = new Date(await getCurrentPeriodEnd(this.settingsManager, subscription) * 1000).toISOString()
       userInfo.customerId = subscription.customer as string
       userInfo.subscriptionId = subscription.id as string
       userInfo.hasPaymentFailed = false

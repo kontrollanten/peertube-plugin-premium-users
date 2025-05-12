@@ -5,6 +5,24 @@ import { SETTING_STRIPE_PRODUCT_ID } from '../shared/constants'
 
 export const ONE_DAY = 60 * 60 * 24 * 1000
 
+
+/**
+ * Keep backward compatibility for API upgrade
+ * https://docs.stripe.com/changelog/basil/2025-03-31/deprecate-subscription-current-period-start-and-end
+ */
+export const getCurrentPeriodEnd = async (
+  settingsManager: PluginSettingsManager,
+  subscription: Stripe.Subscription & { current_period_end?: number }
+) => {
+  const productId = await settingsManager.getSetting(SETTING_STRIPE_PRODUCT_ID) as string
+  const subscriptionItem = subscription.items.data.find(i =>
+    i.price.product === productId
+  )
+  const periodEnd = subscription?.current_period_end || subscriptionItem?.current_period_end
+
+  return periodEnd as number
+}
+
 /**
  * Create instance unique field names to make it possible to have the same Stripe account
  * conneted with multiple instances.

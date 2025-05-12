@@ -8,7 +8,7 @@ import { Storage } from '../storage'
 import { SETTING_STRIPE_API_KEY } from '../../shared/constants'
 import Stripe from 'stripe'
 import { Subscription } from '../types'
-import { getCustomerSubscriptions } from '../utils'
+import { getCurrentPeriodEnd, getCustomerSubscriptions } from '../utils'
 
 const convertStripeDateToString = (date: number): string =>
   new Date(date * 1000).toISOString()
@@ -115,12 +115,13 @@ export class SubscriptionRoute {
       return
     }
 
+    const currentPeriodEnd = await getCurrentPeriodEnd(this.settingsManager, subscription)
     const sub: Subscription = {
       cancelAt: subscription?.cancel_at ? convertStripeDateToString(subscription.cancel_at) : null,
       cancelAtPeriodEnd: subscription?.cancel_at_period_end ?? null,
       canceledAt: subscription?.canceled_at ? convertStripeDateToString(subscription.canceled_at) : null,
-      currentPeriodEnd: subscription?.current_period_end
-        ? convertStripeDateToString(subscription.current_period_end)
+      currentPeriodEnd: currentPeriodEnd
+        ? convertStripeDateToString(currentPeriodEnd)
         : null,
       status: subscription?.status ?? null,
       startDate: subscription?.start_date ? convertStripeDateToString(subscription.start_date) : null,
