@@ -57,6 +57,23 @@ export class CheckoutRoute {
     })
     let customer = customerRes.data.pop()
 
+    if (customer) {
+      const customerUserId = customer.metadata[getStripeCustomerMetadataFieldNames(this.peertubeHelpers).userId]
+
+      /*
+       * If the Stripe customer is connected with another user,
+       * due to previously being premium and then deleted their Peertube user,
+       * update the metadata to point to the current Peertube user.
+       */
+      if (Number(customerUserId) !== user.id) {
+        await stripe.customers.update(customer.id, {
+          metadata: {
+            [getStripeCustomerMetadataFieldNames(this.peertubeHelpers).userId]: user.id
+          }
+        })
+      }
+    }
+
     if (!customer) {
       this.peertubeHelpers.logger.debug('No customer found, will create one with email ' + user.email)
 
